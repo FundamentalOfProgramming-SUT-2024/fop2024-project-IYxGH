@@ -19,8 +19,10 @@ char spaces[50];
 void board();
 void menu_1();
 void new_user_page();
+void clear_line(int y, int x, int length);
 int check_email(char e[]);
 int check_pass(char p[]);
+int name_exise(char n[]);
 
 int main(){
     for(int i = 0 ; i < 50 ; i++ ){
@@ -99,6 +101,8 @@ void new_user_page(user_info *u)
     clear();
     echo();
     curs_set(TRUE);
+    FILE *user_file;
+    fopen()
     mvprintw( LINES/2 - 7 , COLS/2 - 8 , "Name: ");
     mvprintw( LINES/2 - 5 , COLS/2 - 8 , "Email: ");
     mvprintw( LINES/2 - 3 , COLS/2 - 8 , "Password: ");
@@ -109,7 +113,7 @@ void new_user_page(user_info *u)
     move(LINES/2 - 7 , COLS/2 +2);
     getnstr(u->name ,  50);
 
-    if(1)
+    if(name_exise( u->name ) == )
     {
         break;
     }
@@ -117,7 +121,7 @@ void new_user_page(user_info *u)
     }
 
     while(1){
-        
+        clear_line(LINES/2 - 5 , COLS/2 +2 , 50);
         move(LINES/2 - 5 , COLS/2 +2);
         getnstr(u->email ,  50);
         if( check_email(u->email) == 1){
@@ -130,7 +134,7 @@ void new_user_page(user_info *u)
     }
     mvprintw(LINES/2 , COLS/2 -5  , "%s" , spaces );
     while(1){
-
+        clear_line(LINES/2 - 3 , COLS/2 +2 , 50);
         move(LINES/2 - 3 , COLS/2 +2);
         getnstr(u->pass ,  50);
         if(check_pass( u->pass ) == 0){
@@ -198,5 +202,33 @@ int check_pass(char p[]){
     }
     return 0;
 }
+
+int name_exist(char n[]){
+
+    FILE *file = fopen("usernames.txt", "r");
+
+
+    char line[100];
+    while (fgets(line, sizeof(line), file)) {
+        line[strcspn(line, "\n")] = '\0';
+
+        if (strcmp(line, n) == 0) {
+            fclose(file);
+            return 1; 
+        }
+    }
+
+    fclose(file);
+    return 0; 
+}
+
+void clear_line(int y, int x, int length) {
+    move(y, x);
+    for (int i = 0; i < length; i++) {
+        addch(' ');
+    }
+    move(y, x);
+}
+
 
 
