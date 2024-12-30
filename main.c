@@ -12,7 +12,7 @@ typedef struct
 } user_info;
 
 user_info u;
-char spaces[200];
+char spaces[50];
 
 
 //functions
@@ -23,6 +23,10 @@ int check_email(char e[]);
 int check_pass(char p[]);
 
 int main(){
+    for(int i = 0 ; i < 50 ; i++ ){
+        spaces[i] = ' ';
+    }
+    spaces[50] = '\0'; 
     initscr();
     curs_set(FALSE);
     board();
@@ -124,7 +128,7 @@ void new_user_page(user_info *u)
 
 
     }
-    mvprintw(LINES/2 , COLS/2 -5  , "                                         ");
+    mvprintw(LINES/2 , COLS/2 -5  , "%s" , spaces );
     while(1){
 
         move(LINES/2 - 3 , COLS/2 +2);
