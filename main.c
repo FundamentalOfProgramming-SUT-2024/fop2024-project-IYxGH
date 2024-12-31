@@ -24,7 +24,7 @@ int check_pass(char p[]);
 int name_exist(char n[]);
 void add_name(char n[]);
 void login_page();
-void menu_2();
+// void menu_2();
 void add_user(user_info u);
 int pass_authenticator(user_info u);
 
@@ -34,7 +34,7 @@ int main(){
     board();
     keypad(stdscr , TRUE);
     menu_1();
-    menu_2();
+    // menu_2();
     
 
 
@@ -244,7 +244,7 @@ void clear_line(int y, int x, int length) {
     move(y, x);
 }
 
-void login_psge(){
+void login_page(){
     clear();
     echo();
     board();
