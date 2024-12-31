@@ -12,7 +12,6 @@ typedef struct
 } user_info;
 
 user_info u;
-char spaces[50];
 
 
 //functions
@@ -22,18 +21,20 @@ void new_user_page();
 void clear_line(int y, int x, int length);
 int check_email(char e[]);
 int check_pass(char p[]);
-int name_exise(char n[]);
+int name_exist(char n[]);
+void add_name(char n[]);
+void login_page();
+void menu_2();
+void add_user(user_info u);
+int pass_authenticator(user_info u);
 
 int main(){
-    for(int i = 0 ; i < 50 ; i++ ){
-        spaces[i] = ' ';
-    }
-    spaces[50] = '\0'; 
     initscr();
     curs_set(FALSE);
     board();
     keypad(stdscr , TRUE);
     menu_1();
+    menu_2();
     
 
 
@@ -90,8 +91,11 @@ void menu_1()
         break;
 
     case 1:
-    
-    default:
+        login_page(&u);
+        break;
+
+    case 2:
+        strcpy(u.name , "GUEST");
         break;
     }
 }
@@ -100,26 +104,27 @@ void new_user_page(user_info *u)
 {
     clear();
     echo();
+    board();
     curs_set(TRUE);
-    FILE *user_file;
-    fopen()
-    mvprintw( LINES/2 - 7 , COLS/2 - 8 , "Name: ");
+    mvprintw( LINES/2 - 7 , COLS/2 - 8 , "Username: ");
     mvprintw( LINES/2 - 5 , COLS/2 - 8 , "Email: ");
     mvprintw( LINES/2 - 3 , COLS/2 - 8 , "Password: ");
 
     while (1)
     {
-    
-    move(LINES/2 - 7 , COLS/2 +2);
-    getnstr(u->name ,  50);
+        clear_line(LINES/2 - 7 , COLS/2 +2 , 50);
+        move(LINES/2 - 7 , COLS/2 +2);
+        getnstr(u->name ,  50);
 
-    if(name_exise( u->name ) == )
-    {
-        break;
+        if(name_exist( u->name ) )
+        {
+            mvprintw(LINES/2   , COLS/2 - 4 , "This username already exists!");
+        }else{
+            add_name(u->name);
+            break;
+        }  
     }
-        
-    }
-
+    clear_line(LINES/2   , COLS/2 - 5 , 40);
     while(1){
         clear_line(LINES/2 - 5 , COLS/2 +2 , 50);
         move(LINES/2 - 5 , COLS/2 +2);
@@ -127,23 +132,25 @@ void new_user_page(user_info *u)
         if( check_email(u->email) == 1){
             break;
         }else{
-            mvprintw( LINES/2   , COLS/2 - 5 , "Not valid email!            ");
+            mvprintw( LINES/2   , COLS/2 - 4 , "Not valid email!");
         }
 
 
     }
-    mvprintw(LINES/2 , COLS/2 -5  , "%s" , spaces );
+    clear_line(LINES/2   , COLS/2 - 5 , 40);
     while(1){
         clear_line(LINES/2 - 3 , COLS/2 +2 , 50);
         move(LINES/2 - 3 , COLS/2 +2);
         getnstr(u->pass ,  50);
         if(check_pass( u->pass ) == 0){
-            mvprintw( LINES/2   , COLS/2 - 5 , "Not valid password!        ");
+            mvprintw( LINES/2   , COLS/2 - 4 , "Not valid password!");
         }else{
             break;
         }
     }
     curs_set(FALSE);
+    add_user( *u);
+
 }
 
 int check_email(char e[]){
@@ -210,8 +217,9 @@ int name_exist(char n[]){
 
     char line[100];
     while (fgets(line, sizeof(line), file)) {
-        line[strcspn(line, "\n")] = '\0';
-
+        if(line[strlen(line) - 1] == '\n'){
+            line[strlen(line) - 1] = '\0';
+        }
         if (strcmp(line, n) == 0) {
             fclose(file);
             return 1; 
@@ -222,12 +230,83 @@ int name_exist(char n[]){
     return 0; 
 }
 
+void add_name(char n[]){
+    FILE *file = fopen("usernames.txt" , "a");
+    fprintf(file , "\n%s" , n);
+    fclose(file);
+}
+
 void clear_line(int y, int x, int length) {
     move(y, x);
     for (int i = 0; i < length; i++) {
         addch(' ');
     }
     move(y, x);
+}
+
+void login_psge(){
+    clear();
+    echo();
+    board();
+    curs_set(TRUE);
+    mvprintw( LINES/2 - 7 , COLS/2 - 8 , "username: ");
+    mvprintw( LINES/2 - 5 , COLS/2 - 8 , "Password: ");
+
+    while (1)
+    {
+        clear_line(LINES/2 - 7 , COLS/2 +2 , 50);
+        move(LINES/2 - 7 , COLS/2 +2);
+        getnstr(u.name ,  50);
+
+        if(name_exist( u.name ) )
+        {
+            break;
+        }else{
+            mvprintw(LINES/2   , COLS/2 - 4 , "Not valid usrename!");
+        }  
+    }
+
+    clear_line(LINES/2   , COLS/2 - 5 , 40);
+    while(1){
+        clear_line(LINES/2 - 5 , COLS/2 +2 , 50);
+        move(LINES/2 - 5 , COLS/2 +2);
+        getnstr(u.pass ,  50);
+        if(pass_authenticator( u ) == 0){
+            mvprintw( LINES/2  , COLS/2 - 4 , "Incorrect passwoord!");
+        }else{
+            break;
+        }
+    }
+}
+
+void add_user(user_info u){
+    char temp[100];
+    strcpy(temp , u.name);
+    strcat(temp , ".txt");
+    FILE *file = fopen( temp , "w");
+    fprintf(file , "%s\n%s\n%s" , u.name , u.email , u.pass);
+    fclose(file);
+}
+
+int pass_authenticator(user_info u){
+    char temp[100];
+    strcpy(temp , u.name);
+    strcat(temp , ".txt");
+    FILE *file = fopen( temp , "r");
+    int line_number = 0;
+    char buffer[100];
+    while (fgets(buffer, sizeof(buffer), file) != NULL) {
+        line_number++;
+        if (line_number == 3) {
+            if(strcmp(buffer , u.pass) == 0){
+                fclose(file);
+                return 1;
+            }else{
+                fclose(file);
+                return 0;
+            }
+        }
+    }
 }
 
 
