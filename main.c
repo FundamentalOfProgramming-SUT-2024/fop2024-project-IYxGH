@@ -24,18 +24,20 @@ int check_pass(char p[]);
 int name_exist(char n[]);
 void add_name(char n[]);
 void login_page();
-// void menu_2();
+void menu_2();
 void add_user(user_info u);
 int pass_authenticator(user_info u);
+char *generatePassword();
+
 
 int main(){
     initscr();
     curs_set(FALSE);
     board();
+    srand(time(0));
     keypad(stdscr , TRUE);
     menu_1();
-    // menu_2();
-    
+    menu_2();
 
 
     endwin();
@@ -60,11 +62,12 @@ void board()
 
 void menu_1()
 {
+    noecho();
     board();
     int choice = 0;
     const char *sign_or_log[] = {"New user" , "Login" , "Guest"};
 
-
+    refresh();
     while(1){
         for(int i = 0 ; i < 3 ; i++)
         {
@@ -118,7 +121,7 @@ void new_user_page(user_info *u)
 
         if(name_exist( u->name ) )
         {
-            mvprintw(LINES/2   , COLS/2 - 4 , "This username already exists!");
+            mvprintw(LINES/2   , COLS/2 - 2 , "This username already exists!");
         }else{
             add_name(u->name);
             break;
@@ -132,7 +135,7 @@ void new_user_page(user_info *u)
         if( check_email(u->email) == 1){
             break;
         }else{
-            mvprintw( LINES/2   , COLS/2 - 4 , "Not valid email!");
+            mvprintw( LINES/2   , COLS/2 - 2 , "Not valid email!");
         }
 
 
@@ -140,10 +143,17 @@ void new_user_page(user_info *u)
     clear_line(LINES/2   , COLS/2 - 5 , 40);
     while(1){
         clear_line(LINES/2 - 3 , COLS/2 +2 , 50);
+        mvprintw(LINES/2 + 1  , COLS/2 - 4 , "Type \"R\" for random password:");
         move(LINES/2 - 3 , COLS/2 +2);
         getnstr(u->pass ,  50);
-        if(check_pass( u->pass ) == 0){
-            mvprintw( LINES/2   , COLS/2 - 4 , "Not valid password!");
+        if(strcmp(u->pass , "R") == 0){
+            clear_line(LINES/2 + 2  , COLS/2 - 4  , 20);
+            char temppass[20];
+            strcpy(temppass , generatePassword());
+            mvprintw(LINES/2 + 2  , COLS/2 - 4 , "%s" , temppass );
+        }
+        else if(check_pass( u->pass ) == 0){
+            mvprintw( LINES/2   , COLS/2 - 2 , "Not valid password!");
         }else{
             break;
         }
@@ -309,5 +319,73 @@ int pass_authenticator(user_info u){
     }
 }
 
+void menu_2(){
+    curs_set(FALSE);
+    noecho();
+    board();
+    int choice = 0;
+    const char *menu_items[] = {"New Game" , "Continue" , "Profile" , "Rankings" , "Settings"};
 
+
+    while(1){
+        for(int i = 0 ; i < 5 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,menu_items[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 4 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 4) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+
+        break;
+
+    case 1:
+        
+        break;
+
+    case 2:
+
+        break;
+
+    default:
+    
+    break;
+    }
+}
+
+char* generatePassword() {
+    static char password[11];
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int length = 7 + rand() % 4;
+    int hasUpper = 0, hasLower = 0, hasDigit = 0;
+
+    for (int i = 0; i < length; i++) {
+        char randomChar = charset[rand() % (sizeof(charset) - 1)];
+        password[i] = randomChar;
+
+        if (randomChar >= 'A' && randomChar <= 'Z') hasUpper = 1;
+        if (randomChar >= 'a' && randomChar <= 'z') hasLower = 1;
+        if (randomChar >= '0' && randomChar <= '9') hasDigit = 1;
+    }
+
+    if (!hasUpper) password[rand() % length] = 'A' + (rand() % 26);
+    if (!hasLower) password[rand() % length] = 'a' + (rand() % 26);
+    if (!hasDigit) password[rand() % length] = '0' + (rand() % 10);
+
+    password[length] = '\0';
+    return password;
+}
 
