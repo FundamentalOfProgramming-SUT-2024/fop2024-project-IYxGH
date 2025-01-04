@@ -20,28 +20,32 @@ typedef struct{
 typedef struct{
     pos up_left;
     pos bottom_right;
-}room;
+    int L;
+    int W;
+    int E;
+}room_info;
 
 user_info u;
+room_info room[100];
 
 
-//functions
-void board();
-void menu_1();
-void new_user_page();
-void clear_line(int y, int x, int length);
-int check_email(char e[]);
-int check_pass(char p[]);
-int name_exist(char n[]);
-void add_name(char n[]);
-void login_page();
-void menu_2();
-void add_user(user_info u);
-int pass_authenticator(user_info u); //check if the password is valid
-char *generatePassword(); //generate random valid password
-int randomint(int a , int b); //generate random number between a and b
-void new_game(user_info u); //game page
-void room_generator(pos a , pos b); //generate random room
+    // functions
+        void board();
+        void menu_1();
+        void new_user_page();
+        void clear_line(int y, int x, int length);
+        int check_email(char e[]);
+        int check_pass(char p[]);
+        int name_exist(char n[]);
+        void add_name(char n[]);
+        void login_page();
+        void menu_2();
+        void add_user(user_info u);
+        int pass_authenticator(user_info u); //check if the password is valid
+        char *generatePassword(); //generate random valid password
+        int randomint(int a , int b); //generate random number between a and b
+        void new_game(user_info u); //game page
+        void room_generator(pos a , pos b , room_info room); //generate random room
 
 
 int main(){
@@ -50,9 +54,9 @@ int main(){
     board();
     srand(time(0));
     keypad(stdscr , TRUE);
-    menu_1();
-    menu_2();
-
+    // menu_1();
+    // menu_2();
+    new_game(u);
 
     endwin();
     return 0;
@@ -413,27 +417,64 @@ void new_game(user_info u){
     clear();
     noecho();
     //curs_set(FALSE);
-    pos a;
-    pos b;
-    a.x = 1;
-    a.y = 1;
-    b.x = 25;
-    b.y = 25;
-    room_generator(a , b);
+    for (int i = 0; i < 4; i++)
+    {
+        for(int j =0 ; j < 2 ; j++){
+            if((j == 1) && (i == 0)){
+                int v = randomint(0 , 2);
+                if(v){
+                    break;
+                }
+            }
+            if((j == 0) && (i == 3)){
+                int v = randomint(0 , 2);
+                if(v){
+                    continue;
+                }
+            }
+            pos a;
+            pos b;
+            a.x = 5 + 15*j;
+            b.x = 19 + 15*j;
+            if (i==0){
+                a.y = COLS/2 - 60;
+                b.y = COLS/2 - 33;
+            }
+            else if (i==1)
+            {
+                a.y = COLS/2 - 30;
+                b.y = COLS/2 - 4;
+            }
+            else if(i==2){
+                a.y = COLS/2 + 2;
+                b.y = COLS/2 + 28;
+            }
+            else if(i==3){
+                a.y = COLS/2 + 30;
+                b.y = COLS/2 + 60;
+            }
+            room_generator(a , b , room[10*j + i]);
+        }
+    }
+    
     getch();
 
 
 }
 
-void room_generator(pos a , pos b){
+void room_generator(pos a , pos b , room_info room){
     int length , width;
-    length = randomint(4 , 13);
-    width = randomint(4 , 13);
-    room s;
+    length = randomint(7 , 19);
+    width = randomint(4 , 8);
+    room_info s;
+    s.W = width;
+    s.L = length;
     s.up_left.y = randomint(a.y + 1 , b.y - length - 1);
     s.up_left.x = randomint(a.x + 1 , b.x - width - 1);
     s.bottom_right.y = s.up_left.y + length + 1;
     s.bottom_right.x = s.up_left.x + width + 1;
+    room = s;
+    room.E = 1;
     for(int i = 0; i < length + 2 ; i++){
         mvaddch( s.up_left.x , s.up_left.y + i , '-');
         mvaddch( s.bottom_right.x , s.bottom_right.y  - i , '-');
