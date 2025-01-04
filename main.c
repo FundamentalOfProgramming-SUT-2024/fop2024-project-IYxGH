@@ -9,7 +9,18 @@ typedef struct
     char name[50];
     char email[100];
     char pass[50];
+    int guest;
 } user_info;
+
+typedef struct{
+    int x;
+    int y;
+}pos;
+
+typedef struct{
+    pos up_left;
+    pos bottom_right;
+}room;
 
 user_info u;
 
@@ -26,8 +37,11 @@ void add_name(char n[]);
 void login_page();
 void menu_2();
 void add_user(user_info u);
-int pass_authenticator(user_info u);
-char *generatePassword();
+int pass_authenticator(user_info u); //check if the password is valid
+char *generatePassword(); //generate random valid password
+int randomint(int a , int b); //generate random number between a and b
+void new_game(user_info u); //game page
+void room_generator(pos a , pos b); //generate random room
 
 
 int main(){
@@ -99,6 +113,7 @@ void menu_1()
 
     case 2:
         strcpy(u.name , "GUEST");
+        u.guest = 1 ;
         break;
     }
 }
@@ -287,6 +302,7 @@ void login_page(){
             break;
         }
     }
+    u.guest = 0;
 }
 
 void add_user(user_info u){
@@ -349,7 +365,7 @@ void menu_2(){
     switch (choice)
     {
     case 0:
-
+        new_game(u);
         break;
 
     case 1:
@@ -388,4 +404,54 @@ char* generatePassword() {
     password[length] = '\0';
     return password;
 }
+
+int randomint(int a , int b){
+    return ((rand() % (b -a)) + a);
+}
+
+void new_game(user_info u){
+    clear();
+    noecho();
+    //curs_set(FALSE);
+    pos a;
+    pos b;
+    a.x = 1;
+    a.y = 1;
+    b.x = 25;
+    b.y = 25;
+    room_generator(a , b);
+    getch();
+
+
+}
+
+void room_generator(pos a , pos b){
+    int length , width;
+    length = randomint(4 , 13);
+    width = randomint(4 , 13);
+    room s;
+    s.up_left.y = randomint(a.y + 1 , b.y - length - 1);
+    s.up_left.x = randomint(a.x + 1 , b.x - width - 1);
+    s.bottom_right.y = s.up_left.y + length + 1;
+    s.bottom_right.x = s.up_left.x + width + 1;
+    for(int i = 0; i < length + 2 ; i++){
+        mvaddch( s.up_left.x , s.up_left.y + i , '-');
+        mvaddch( s.bottom_right.x , s.bottom_right.y  - i , '-');
+    }
+    for (int i = 0; i < width; i++)
+    {
+        mvaddch( s.up_left.x + 1 + i , s.up_left.y , '|');
+        mvaddch(s.bottom_right.x - 1 - i , s.bottom_right.y , '|');
+    }
+    for(int i = 0; i < width ; i++){
+        for(int j = 0 ; j< length ; j++){
+            mvaddch(s.up_left.x + 1 + i , s.up_left.y + 1 + j , '.');
+        }
+    }
+
+}
+
+
+
+
 
