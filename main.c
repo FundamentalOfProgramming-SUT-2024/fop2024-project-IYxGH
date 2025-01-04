@@ -10,7 +10,7 @@ typedef struct
     char email[100];
     char pass[50];
     int guest;
-} user_info;
+}user_info;
 
 typedef struct{
     int x;
@@ -29,6 +29,7 @@ user_info u;
 room_info room[100];
 room_info s;
 pos player;
+int diff_level;
 
 
     // functions
@@ -50,6 +51,8 @@ pos player;
         void room_generator(pos a , pos b); //generate random room
         void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
         void add_pillar(room_info room); //generate pillars in chosen room
+        void setting_page(); //page for setting after menu
+        void diff_page(); //page for chosing difficulty level
 
 
 int main(){
@@ -61,8 +64,8 @@ int main(){
 
     
     // menu_1();
-    // menu_2();
-    new_game(u);
+    menu_2();
+    // new_game(u);
 
     endwin();
     return 0;
@@ -98,7 +101,7 @@ void menu_1()
             if(i == choice){
                 attron(A_REVERSE);
             }
-            mvprintw(LINES/2 - 1 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
             if(i == choice){
                 attroff(A_REVERSE);
             }
@@ -350,7 +353,7 @@ void menu_2(){
     noecho();
     board();
     int choice = 0;
-    const char *menu_items[] = {"New Game" , "Continue" , "Profile" , "Rankings" , "Settings"};
+    const char *menu_items[] = {"New Game" , "Load game" , "Profile" , "Rankings" , "Settings"};
 
 
     while(1){
@@ -386,8 +389,14 @@ void menu_2(){
 
         break;
 
+    case 3:
+
+        break;
+
+    case 4:
+        setting_page();
+        break;
     default:
-    
     break;
     }
 }
@@ -427,6 +436,12 @@ void new_game(user_info u){
     {
         room[i].E = 0;
     }
+    for (int i = 0; i < LINES; i++)
+    {
+        mvaddch(i , COLS-20 , '|');
+    }
+    
+
     for (int i = 0; i < 4; i++)
     {
         for(int j =0 ; j < 2 ; j++){
@@ -448,20 +463,20 @@ void new_game(user_info u){
             b.x = 19 + 15*j;
             if (i==0){
                 a.y = COLS/2 - 60;
-                b.y = COLS/2 - 33;
+                b.y = COLS/2 - 36;
             }
             else if (i==1)
             {
-                a.y = COLS/2 - 28;
-                b.y = COLS/2 - 4;
+                a.y = COLS/2 - 32;
+                b.y = COLS/2 - 7;
             }
             else if(i==2){
-                a.y = COLS/2 + 4;
-                b.y = COLS/2 + 28;
+                a.y = COLS/2;
+                b.y = COLS/2 + 22;
             }
             else if(i==3){
-                a.y = COLS/2 + 33;
-                b.y = COLS/2 + 60;
+                a.y = COLS/2 + 28;
+                b.y = COLS/2 + 50;
             }
             room_generator(a , b);
             room[10*j + i] = s;
@@ -500,7 +515,7 @@ void new_game(user_info u){
         }
     }
     
-    int ii = randomint(0 , 4);
+    int ii = randomint(0,4);
     int jj = randomint(0,2);
     if(room[10*jj + ii].E == 1){
         player.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
@@ -740,7 +755,7 @@ void corridor_maker(room_info room_1 , room_info room_2 , int type){
 }
 
 void add_pillar(room_info room){
-    int num = randomint(0,4);
+    int num = randomint(0,5);
     for (int i = 0; i < num; i++)
     {
         int xx = randomint(room.up_left.x + 2 , room.bottom_right.x -1);
@@ -749,4 +764,90 @@ void add_pillar(room_info room){
     }
 }
 
+void setting_page(){
+    noecho();
+    board();
+    int choice = 0;
+    const char *sign_or_log[] = {"Difficulty" , "Character" ,  "Music"};
+
+    refresh();
+    while(1){
+        for(int i = 0 ; i < 3 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 2 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 2) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+        diff_page();
+        break;
+
+    case 1:
+        login_page(&u);
+        break;
+
+    case 2:
+        strcpy(u.name , "GUEST");
+        u.guest = 1 ;
+        break;
+    }
+}
+
+void diff_page(){
+    noecho();
+    board();
+    int choice = 0;
+    const char *sign_or_log[] = {"Easy" , "Medium" ,  "Hard"};
+    refresh();
+    while(1){
+        for(int i = 0 ; i < 3 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 2 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 2) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+        diff_level = 1;
+        menu_2();
+        break;
+
+    case 1:
+        diff_level = 2;
+        menu_2();
+        break;
+
+    case 2:
+        diff_level = 3;
+        menu_2();
+        break;
+    }
+}
 
