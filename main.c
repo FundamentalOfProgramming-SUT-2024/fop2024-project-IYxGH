@@ -28,6 +28,7 @@ typedef struct{
 user_info u;
 room_info room[100];
 room_info s;
+pos player;
 
 
     // functions
@@ -56,6 +57,11 @@ int main(){
     board();
     srand(time(0));
     keypad(stdscr , TRUE);
+    for (int i = 0; i < 50; i++)
+    {
+        room[i].E = 0;
+    }
+    
     // menu_1();
     // menu_2();
     new_game(u);
@@ -418,7 +424,7 @@ int randomint(int a , int b){
 void new_game(user_info u){
     clear();
     noecho();
-    //curs_set(FALSE);
+    curs_set(FALSE);
     for (int i = 0; i < 4; i++)
     {
         for(int j =0 ; j < 2 ; j++){
@@ -460,13 +466,156 @@ void new_game(user_info u){
             room[10*j + i].E = 1;
         }
     }
-    //mvprintw(0,0,"%d" , room[11].bottom_right.x);
-    corridor_maker(room[1] , room[2] , 1);
-    corridor_maker(room[1] , room[11] , 2);
+
+    corridor_maker(room[0] , room[1] , 1);
+    corridor_maker(room[12] , room[13] , 1);
+    int uu = randomint(1 , 6);
+    if(uu != 1){
+        corridor_maker(room[1] , room[2] , 1);
+    }
+    if(uu != 2){
+        corridor_maker(room[11] , room[12] , 1);
+    }
+    if(uu != 3){
+        corridor_maker(room[1] , room[11] , 2);
+    }
+    if(uu != 4){
+        corridor_maker(room[2] , room[12] , 2);
+    }
+    if(room[10].E == 1){
+        if(randomint(0 , 2)){
+            corridor_maker(room[10] , room[11] , 1);
+        }else{
+            corridor_maker(room[0] , room[10] , 2);
+        }
+    }
+    if(room[3].E == 1){
+        if(randomint(0 , 2)){
+            corridor_maker(room[2] , room[3] , 1);
+        }else{
+            corridor_maker(room[3] , room[13] , 2);
+        }
+    }
     
-    getch();
+    int ii = randomint(0 , 4);
+    int jj = randomint(0,2);
+    if(room[10*jj + ii].E == 1){
+        player.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
+        player.y = (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2;
+    }
+    char last_pos = '.';
+    mvaddch(player.x , player.y , '@');
+    refresh();
+    while (1)
+    {
+        int ch = getch();
+        char check;
+        if(ch == '0'){break;}
+        switch (ch)
+        {
+        case 'w':
+            check = mvinch(player.x - 1, player.y) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x--;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+        
+        case 's':
+            check = mvinch(player.x + 1, player.y) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x++;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
 
+        case 'a':
+            check = mvinch(player.x , player.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.y--;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
 
+        case 'd':
+            check = mvinch(player.x , player.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.y++;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+
+        case 'q':
+            check = mvinch(player.x - 1, player.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x--;
+                player.y--;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+        case 'e': 
+            check = mvinch(player.x - 1, player.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x--;
+                player.y++;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+        case 'z':
+            check = mvinch(player.x + 1, player.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x++;
+                player.y--;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+        case 'c':
+            check = mvinch(player.x + 1, player.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' '){
+                break;
+            }else{
+                mvprintw(player.x , player.y , "%c" , last_pos);
+                player.x++;
+                player.y++;
+                last_pos = mvinch(player.x, player.y) & A_CHARTEXT;
+                mvaddch(player.x , player.y , '@');
+            }
+            break;
+        
+        
+        default:
+            break;
+        }
+    }
+    
 }
 
 void room_generator(pos a , pos b ){
@@ -583,7 +732,7 @@ void corridor_maker(room_info room_1 , room_info room_2 , int type){
             }
         }
     }else if(type == 3){
-        
+
     }
 }
 
