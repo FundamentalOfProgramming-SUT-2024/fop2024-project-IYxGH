@@ -49,6 +49,7 @@ pos player;
         void new_game(user_info u); //game page
         void room_generator(pos a , pos b); //generate random room
         void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
+        void add_pillar(room_info room); //generate pillars in chosen room
 
 
 int main(){
@@ -57,10 +58,7 @@ int main(){
     board();
     srand(time(0));
     keypad(stdscr , TRUE);
-    for (int i = 0; i < 50; i++)
-    {
-        room[i].E = 0;
-    }
+
     
     // menu_1();
     // menu_2();
@@ -425,6 +423,10 @@ void new_game(user_info u){
     clear();
     noecho();
     curs_set(FALSE);
+    for (int i = 0; i < 50; i++)
+    {
+        room[i].E = 0;
+    }
     for (int i = 0; i < 4; i++)
     {
         for(int j =0 ; j < 2 ; j++){
@@ -464,6 +466,7 @@ void new_game(user_info u){
             room_generator(a , b);
             room[10*j + i] = s;
             room[10*j + i].E = 1;
+            add_pillar(room[10*j + i]);
         }
     }
 
@@ -515,7 +518,7 @@ void new_game(user_info u){
         {
         case 'w':
             check = mvinch(player.x - 1, player.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -527,7 +530,7 @@ void new_game(user_info u){
         
         case 's':
             check = mvinch(player.x + 1, player.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -539,7 +542,7 @@ void new_game(user_info u){
 
         case 'a':
             check = mvinch(player.x , player.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -551,7 +554,7 @@ void new_game(user_info u){
 
         case 'd':
             check = mvinch(player.x , player.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -563,7 +566,7 @@ void new_game(user_info u){
 
         case 'q':
             check = mvinch(player.x - 1, player.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -575,7 +578,7 @@ void new_game(user_info u){
             break;
         case 'e': 
             check = mvinch(player.x - 1, player.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -587,7 +590,7 @@ void new_game(user_info u){
             break;
         case 'z':
             check = mvinch(player.x + 1, player.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -599,7 +602,7 @@ void new_game(user_info u){
             break;
         case 'c':
             check = mvinch(player.x + 1, player.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' '){
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
                 mvprintw(player.x , player.y , "%c" , last_pos);
@@ -736,6 +739,14 @@ void corridor_maker(room_info room_1 , room_info room_2 , int type){
     }
 }
 
-
+void add_pillar(room_info room){
+    int num = randomint(0,4);
+    for (int i = 0; i < num; i++)
+    {
+        int xx = randomint(room.up_left.x + 2 , room.bottom_right.x -1);
+        int yy = randomint(room.up_left.y + 2 , room.bottom_right.y -1);
+        mvaddch(xx , yy , 'O');
+    }
+}
 
 
