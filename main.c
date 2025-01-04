@@ -27,6 +27,7 @@ typedef struct{
 
 user_info u;
 room_info room[100];
+room_info s;
 
 
     // functions
@@ -45,7 +46,8 @@ room_info room[100];
         char *generatePassword(); //generate random valid password
         int randomint(int a , int b); //generate random number between a and b
         void new_game(user_info u); //game page
-        void room_generator(pos a , pos b , room_info room); //generate random room
+        void room_generator(pos a , pos b); //generate random room
+        void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
 
 
 int main(){
@@ -442,39 +444,41 @@ void new_game(user_info u){
             }
             else if (i==1)
             {
-                a.y = COLS/2 - 30;
+                a.y = COLS/2 - 28;
                 b.y = COLS/2 - 4;
             }
             else if(i==2){
-                a.y = COLS/2 + 2;
+                a.y = COLS/2 + 4;
                 b.y = COLS/2 + 28;
             }
             else if(i==3){
-                a.y = COLS/2 + 30;
+                a.y = COLS/2 + 33;
                 b.y = COLS/2 + 60;
             }
-            room_generator(a , b , room[10*j + i]);
+            room_generator(a , b);
+            room[10*j + i] = s;
+            room[10*j + i].E = 1;
         }
     }
+    //mvprintw(0,0,"%d" , room[11].bottom_right.x);
+    corridor_maker(room[1] , room[2] , 1);
+    corridor_maker(room[1] , room[11] , 2);
     
     getch();
 
 
 }
 
-void room_generator(pos a , pos b , room_info room){
+void room_generator(pos a , pos b ){
     int length , width;
     length = randomint(7 , 19);
     width = randomint(4 , 8);
-    room_info s;
     s.W = width;
     s.L = length;
     s.up_left.y = randomint(a.y + 1 , b.y - length - 1);
     s.up_left.x = randomint(a.x + 1 , b.x - width - 1);
     s.bottom_right.y = s.up_left.y + length + 1;
     s.bottom_right.x = s.up_left.x + width + 1;
-    room = s;
-    room.E = 1;
     for(int i = 0; i < length + 2 ; i++){
         mvaddch( s.up_left.x , s.up_left.y + i , '-');
         mvaddch( s.bottom_right.x , s.bottom_right.y  - i , '-');
@@ -492,6 +496,96 @@ void room_generator(pos a , pos b , room_info room){
 
 }
 
+void corridor_maker(room_info room_1 , room_info room_2 , int type){
+    if(type == 1){
+        pos s , e;
+        s.y = room_1.bottom_right.y;
+        e.y = room_2.up_left.y;
+        s.x = randomint(room_1.up_left.x + 1 , room_1.bottom_right.x);
+        e.x = randomint(room_2.up_left.x + 1 , room_2.bottom_right.x);
+        while (s.x == e.x)
+        {
+            e.x = randomint(room_1.up_left.x + 1 , room_1.bottom_right.x);
+        }
+        int ver = s.x - e.x; 
+
+        mvaddch(s.x , s.y , '+');
+        mvaddch(e.x , e.y , '+');
+
+        int break_px = randomint(s.y + 2 , e.y - 1) - s.y;
+        pos wheretoput;
+        wheretoput.x = s.x;
+        wheretoput.y = s.y + 1;
+        for (int i = 0; i < break_px; i++)
+        {
+            mvaddch(wheretoput.x , wheretoput.y , '#');
+            wheretoput.y++;
+        }
+        if(ver < 0){
+            for(int i = 0; i > ver ; i--){
+                mvaddch(wheretoput.x , wheretoput.y , '#');
+                wheretoput.x++;
+            }
+        }else{
+            for(int i = 0; i < ver ; i++){
+                mvaddch(wheretoput.x , wheretoput.y , '#');
+                wheretoput.x--;
+            }
+        }
+        while(wheretoput.y != e.y){
+            mvaddch(wheretoput.x , wheretoput.y , '#');
+            wheretoput.y++;
+            if(wheretoput.y > 2000){
+                break;
+            }
+        }
+        
+    }else if(type == 2){
+        pos s , e;
+        s.x = room_1.bottom_right.x;
+        e.x = room_2.up_left.x;
+        s.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
+        e.y = randomint(room_2.up_left.y + 1 , room_2.bottom_right.y);
+        while (s.y == e.y)
+        {
+            e.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
+        }
+        int ver = s.y - e.y; 
+
+        mvaddch(s.x , s.y , '+');
+        mvaddch(e.x , e.y , '+');
+
+        int break_px = randomint(s.x + 2 , e.x - 1) - s.x;
+        pos wheretoput;
+        wheretoput.x = s.x + 1;
+        wheretoput.y = s.y;
+        for (int i = 0; i < break_px; i++)
+        {
+            mvaddch(wheretoput.x , wheretoput.y , '#');
+            wheretoput.x++;
+        }
+        if(ver < 0){
+            for(int i = 0; i > ver ; i--){
+                mvaddch(wheretoput.x , wheretoput.y , '#');
+                wheretoput.y++;
+            }
+        }else{
+            for(int i = 0; i < ver ; i++){
+                mvaddch(wheretoput.x , wheretoput.y , '#');
+                wheretoput.y--;
+            }
+        }
+        while(wheretoput.x != e.x){
+            mvaddch(wheretoput.x , wheretoput.y , '#');
+            wheretoput.x++;
+            if(wheretoput.x > 2000){
+                break;
+            }
+        }
+    }else if(type == 3){
+        
+    }
+}
 
 
 
