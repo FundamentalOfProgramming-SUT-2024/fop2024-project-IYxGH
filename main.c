@@ -22,6 +22,7 @@ typedef struct{
     int points;
     int gold;
     int hit;
+    int floor;
 }player_info;
 
 typedef struct{
@@ -39,6 +40,7 @@ player_info player;
 int diff_level;
 int hero_color;
 int music;
+char last_pos;
 
 
 // functions    
@@ -65,7 +67,13 @@ int music;
     void char_color(); //page to chane the hero color
     void music_page(); //page to change the music
     void draw_map(); //draw the map randomly
-        
+    void put_player(); //put the player in random room
+    void put_stairs(); //put the stairs randomly in one room
+    void new_floor(); // go up to next level
+    void handle_movement(); //get and check the movement
+    void room_reset(); //reset the room elements
+    void closeall(); // close every thing
+    void print_info(); //print info during the game
 
 int main(){
     initscr();
@@ -141,6 +149,24 @@ void menu_1()
         u.guest = 1 ;
         break;
     }
+}
+
+void room_reset(){
+    for (int i = 0; i < 50; i++)
+    {
+        room[i].L = 0;
+        room[i].E = 0;
+        room[i].W = 0;
+        room[i].bottom_right.x = 0;
+        room[i].up_left.x = 0;
+        room[i].bottom_right.y = 0;
+        room[i].up_left.y = 0;
+    }
+}
+
+void closeall(){
+    endwin();
+    exit(0);
 }
 
 void new_user_page(user_info *u)
@@ -442,6 +468,7 @@ int randomint(int a , int b){
 
 void new_game(user_info u){
     clear();
+    room_reset();
     noecho();
     curs_set(FALSE);
     for (int i = 0; i < 50; i++)
@@ -452,200 +479,11 @@ void new_game(user_info u){
     {
         mvaddch(i , COLS-18 , '|');
     }
-    
-
-    for (int i = 0; i < 4; i++)
-    {
-        for(int j =0 ; j < 2 ; j++){
-            if((j == 1) && (i == 0)){
-                int v = randomint(0 , 2);
-                if(v){
-                    break;
-                }
-            }
-            if((j == 0) && (i == 3)){
-                int v = randomint(0 , 2);
-                if(v){
-                    continue;
-                }
-            }
-            pos a;
-            pos b;
-            a.x = 1 + 19*j;
-            b.x = 16 + 19*j;
-            if (i==0){
-                a.y = COLS/2 - 60;
-                b.y = COLS/2 - 36;
-            }
-            else if (i==1)
-            {
-                a.y = COLS/2 - 32;
-                b.y = COLS/2 - 7;
-            }
-            else if(i==2){
-                a.y = COLS/2;
-                b.y = COLS/2 + 22;
-            }
-            else if(i==3){
-                a.y = COLS/2 + 28;
-                b.y = COLS/2 + 50;
-            }
-            room_generator(a , b);
-            room[10*j + i] = s;
-            room[10*j + i].E = 1;
-            add_pillar(room[10*j + i]);
-        }
-    }
-
-    corridor_maker(room[0] , room[1] , 1);
-    corridor_maker(room[12] , room[13] , 1);
-    int uu = randomint(1 , 6);
-    if(uu != 1){
-        corridor_maker(room[1] , room[2] , 1);
-    }
-    if(uu != 2){
-        corridor_maker(room[11] , room[12] , 1);
-    }
-    if(uu != 3){
-        corridor_maker(room[1] , room[11] , 2);
-    }
-    if(uu != 4){
-        corridor_maker(room[2] , room[12] , 2);
-    }
-    if(room[10].E == 1){
-        if(randomint(0 , 2)){
-            corridor_maker(room[10] , room[11] , 1);
-        }else{
-            corridor_maker(room[0] , room[10] , 2);
-        }
-    }
-    if(room[3].E == 1){
-        if(randomint(0 , 2)){
-            corridor_maker(room[2] , room[3] , 1);
-        }else{
-            corridor_maker(room[3] , room[13] , 2);
-        }
-    }
-    
-    int ii = randomint(0,4);
-    int jj = randomint(0,2);
-    if(room[10*jj + ii].E == 1){
-        player.position.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
-        player.position.y = (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2;
-    }
-    char last_pos = '.';
-    mvaddch(player.position.x , player.position.y , '@');
-    refresh();
-    while (1)
-    {
-        int ch = getch();
-        char check;
-        if(ch == '0'){break;}
-        switch (ch)
-        {
-        case 'w':
-            check = mvinch(player.position.x - 1, player.position.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        
-        case 's':
-            check = mvinch(player.position.x + 1, player.position.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-
-        case 'a':
-            check = mvinch(player.position.x , player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-
-        case 'd':
-            check = mvinch(player.position.x , player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-
-        case 'q':
-            check = mvinch(player.position.x - 1, player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x--;
-                player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        case 'e': 
-            check = mvinch(player.position.x - 1, player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x--;
-                player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        case 'z':
-            check = mvinch(player.position.x + 1, player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x++;
-                player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        case 'c':
-            check = mvinch(player.position.x + 1, player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
-                player.position.x++;
-                player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        
-        
-        default:
-            break;
-        }
-    }
-    
+    player.floor = 1;
+    draw_map();
+    put_player();
+    put_stairs();
+    handle_movement();    
 }
 
 void room_generator(pos a , pos b ){
@@ -958,7 +796,254 @@ void music_page(){
 }
 
 void draw_map(){
+        for (int i = 0; i < 4; i++)
+    {
+        for(int j =0 ; j < 2 ; j++){
+            if((j == 1) && (i == 0)){
+                int v = randomint(0 , 2);
+                if(v){
+                    break;
+                }
+            }
+            if((j == 0) && (i == 3)){
+                int v = randomint(0 , 2);
+                if(v){
+                    continue;
+                }
+            }
+            pos a;
+            pos b;
+            a.x = 1 + 19*j;
+            b.x = 16 + 19*j;
+            if (i==0){
+                a.y = COLS/2 - 60;
+                b.y = COLS/2 - 36;
+            }
+            else if (i==1)
+            {
+                a.y = COLS/2 - 32;
+                b.y = COLS/2 - 7;
+            }
+            else if(i==2){
+                a.y = COLS/2;
+                b.y = COLS/2 + 22;
+            }
+            else if(i==3){
+                a.y = COLS/2 + 28;
+                b.y = COLS/2 + 50;
+            }
+            room_generator(a , b);
+            room[10*j + i] = s;
+            room[10*j + i].E = 1;
+            add_pillar(room[10*j + i]);
+        }
+    }
 
+    corridor_maker(room[0] , room[1] , 1);
+    corridor_maker(room[12] , room[13] , 1);
+    int uu = randomint(1 , 6);
+    if(uu != 1){
+        corridor_maker(room[1] , room[2] , 1);
+    }
+    if(uu != 2){
+        corridor_maker(room[11] , room[12] , 1);
+    }
+    if(uu != 3){
+        corridor_maker(room[1] , room[11] , 2);
+    }
+    if(uu != 4){
+        corridor_maker(room[2] , room[12] , 2);
+    }
+    if(room[10].E == 1){
+        if(randomint(0 , 2)){
+            corridor_maker(room[10] , room[11] , 1);
+        }else{
+            corridor_maker(room[0] , room[10] , 2);
+        }
+    }
+    if(room[3].E == 1){
+        if(randomint(0 , 2)){
+            corridor_maker(room[2] , room[3] , 1);
+        }else{
+            corridor_maker(room[3] , room[13] , 2);
+        }
+    }
+    
 }
+
+void put_player(){
+    int ii = randomint(0,4);
+    int jj = randomint(0,2);
+    if(room[10*jj + ii].E == 1){
+        player.position.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
+        player.position.y = (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2;
+    }
+    last_pos = '.';
+    mvaddch(player.position.x , player.position.y , '@');
+    refresh();
+}
+
+void put_stairs(){
+    int done = 0;
+    while(done == 0){
+        int ii = randomint(0,4);
+        int jj = randomint(0,2);
+        
+        if(room[10*jj + ii].E == 1 && (player.position.x != (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2 ||
+            player.position.y != (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2) ){
+            int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
+            int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y);
+            mvaddch(xx , yy , '%');
+            done = 1;
+        }
+    }
+    refresh();
+}
+
+void new_floor(){
+    clear();
+    room_reset();
+    noecho();
+    curs_set(FALSE);
+    char check = mvinch(player.position.x , player.position.y) & A_CHARTEXT;
+    while(check != '.'){
+        clear();
+        room_reset();
+        draw_map();
+        check = mvinch(player.position.x , player.position.y) & A_CHARTEXT;
+    }
+    for (int i = 0; i < LINES; i++)
+    {
+        mvaddch(i , COLS-18 , '|');
+    }
+    mvaddch(player.position.x , player.position.y , '@');
+    put_stairs();
+    refresh();
+    handle_movement();
+}
+
+void handle_movement(){
+    while (1)
+    {
+        int ch = getch();
+        char check;
+        if(ch == '0'){closeall(0);}
+        switch (ch)
+        {
+        case 'w':
+            check = mvinch(player.position.x - 1, player.position.y) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x--;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+        
+        case 's':
+            check = mvinch(player.position.x + 1, player.position.y) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x++;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+
+        case 'a':
+            check = mvinch(player.position.x , player.position.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.y--;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+
+        case 'd':
+            check = mvinch(player.position.x , player.position.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.y++;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+
+        case 'q':
+            check = mvinch(player.position.x - 1, player.position.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x--;
+                player.position.y--;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+        case 'e': 
+            check = mvinch(player.position.x - 1, player.position.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x--;
+                player.position.y++;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+        case 'z':
+            check = mvinch(player.position.x + 1, player.position.y - 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x++;
+                player.position.y--;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+        case 'c':
+            check = mvinch(player.position.x + 1, player.position.y + 1) & A_CHARTEXT;
+            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+                break;
+            }else{
+                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                player.position.x++;
+                player.position.y++;
+                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                mvaddch(player.position.x , player.position.y , '@');
+            }
+            break;
+        case 'x':
+            if(last_pos == '%'){
+                player.floor++;
+                last_pos = '.';
+                new_floor();
+            }
+            break;
+        
+        default:
+            break;
+        }
+    }
+}
+
+
+
+
+
+
 
 
