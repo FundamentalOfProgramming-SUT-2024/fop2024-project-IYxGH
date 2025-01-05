@@ -3,6 +3,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <string.h>
+#include <locale.h>
 
 typedef struct 
 {
@@ -74,16 +75,28 @@ char last_pos;
     void room_reset(); //reset the room elements
     void closeall(); // close every thing
     void print_info(); //print info during the game
+    int check_room(room_info room); //check if the player is in the room or not 
+
 
 int main(){
+    setlocale(LC_ALL, "");
     initscr();
     curs_set(FALSE);
+    cbreak();
+    int required_lines = 35;
+    int required_cols = 130;
+    int rows , cols;
+    getmaxyx(stdscr, rows, cols);
+    if (rows < required_lines || cols < required_cols) { endwin();  
+    fprintf(stderr, "Window is too small. Requires at least %d lines and %d columns.\n", required_lines, required_cols);
+    return 1;
+    }
     board();
     srand(time(0));
     keypad(stdscr , TRUE);
 
     
-    // menu_1();
+    menu_1();
     menu_2();
     // new_game(u);
 
@@ -889,8 +902,7 @@ void put_stairs(){
         int ii = randomint(0,4);
         int jj = randomint(0,2);
         
-        if(room[10*jj + ii].E == 1 && (player.position.x != (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2 ||
-            player.position.y != (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2) ){
+        if(room[10*jj + ii].E == 1 && check_room(room[10*jj + ii]) == 0 ){
             int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
             int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y);
             mvaddch(xx , yy , '%');
@@ -925,6 +937,7 @@ void new_floor(){
 void handle_movement(){
     while (1)
     {
+        print_info();
         int ch = getch();
         char check;
         if(ch == '0'){closeall(0);}
@@ -1040,9 +1053,25 @@ void handle_movement(){
     }
 }
 
+int check_room(room_info room){
+    if(player.position.x > room.up_left.x && player.position.x < room.bottom_right.x){
+        if(player.position.y > room.up_left.y && player.position.y < room.bottom_right.y){
+            return 1;
+        }
+    }
+    return 0;
+}
 
-
-
+void print_info(){
+    mvprintw(1 , COLS - 14 , "---%s---" , u.name);
+    for(int i = 0 ; i < 17 ; i ++){
+        mvprintw(2 , COLS - i , "■");  //⇔▬▲▼■
+        mvprintw(9 , COLS - i , "■");
+    }
+    mvprintw(11 , COLS - 16 , "Gold:   %d" , player.gold);
+    mvprintw(12 , COLS - 16 , "Hits:   %d" , player.hit);
+    mvprintw(13 , COLS - 16 , "Floor:  %d" , player.floor);
+}
 
 
 
