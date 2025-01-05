@@ -30,30 +30,34 @@ room_info room[100];
 room_info s;
 pos player;
 int diff_level;
+int hero_color;
+int music;
 
 
-    // functions
-        void board();
-        void menu_1();
-        void new_user_page();
-        void clear_line(int y, int x, int length);
-        int check_email(char e[]);
-        int check_pass(char p[]);
-        int name_exist(char n[]);
-        void add_name(char n[]);
-        void login_page();
-        void menu_2();
-        void add_user(user_info u);
-        int pass_authenticator(user_info u); //check if the password is valid
-        char *generatePassword(); //generate random valid password
-        int randomint(int a , int b); //generate random number between a and b
-        void new_game(user_info u); //game page
-        void room_generator(pos a , pos b); //generate random room
-        void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
-        void add_pillar(room_info room); //generate pillars in chosen room
-        void setting_page(); //page for setting after menu
-        void diff_page(); //page for chosing difficulty level
-
+// functions    
+    void board();
+    void menu_1();
+    void new_user_page();
+    void clear_line(int y, int x, int length);
+    int check_email(char e[]);
+    int check_pass(char p[]);
+    int name_exist(char n[]);
+    void add_name(char n[]);
+    void login_page();
+    void menu_2();
+    void add_user(user_info u);
+    int pass_authenticator(user_info u); //check if the password is valid
+    char *generatePassword(); //generate random valid password
+    int randomint(int a , int b); //generate random number between a and b
+    void new_game(user_info u); //game page
+    void room_generator(pos a , pos b); //generate random room
+    void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
+    void add_pillar(room_info room); //generate pillars in chosen room
+    void setting_page(); //page for setting after menu
+    void diff_page(); //page for chosing difficulty level
+    void char_color(); //page to chane the hero color
+    void music_page(); //page to change the music
+        
 
 int main(){
     initscr();
@@ -459,8 +463,8 @@ void new_game(user_info u){
             }
             pos a;
             pos b;
-            a.x = 5 + 15*j;
-            b.x = 19 + 15*j;
+            a.x = 1 + 19*j;
+            b.x = 16 + 19*j;
             if (i==0){
                 a.y = COLS/2 - 60;
                 b.y = COLS/2 - 36;
@@ -638,7 +642,7 @@ void new_game(user_info u){
 
 void room_generator(pos a , pos b ){
     int length , width;
-    length = randomint(7 , 19);
+    length = randomint(6 , 15);
     width = randomint(4 , 8);
     s.W = width;
     s.L = length;
@@ -768,7 +772,7 @@ void setting_page(){
     noecho();
     board();
     int choice = 0;
-    const char *sign_or_log[] = {"Difficulty" , "Character" ,  "Music"};
+    const char *sign_or_log[] = {"Difficulty" , "Character Color" ,  "Music"};
 
     refresh();
     while(1){
@@ -797,12 +801,11 @@ void setting_page(){
         break;
 
     case 1:
-        login_page(&u);
+        char_color();
         break;
 
     case 2:
-        strcpy(u.name , "GUEST");
-        u.guest = 1 ;
+        music_page();
         break;
     }
 }
@@ -850,4 +853,100 @@ void diff_page(){
         break;
     }
 }
+
+void char_color(){
+    noecho();
+    board();
+    int choice = 0;
+    const char *sign_or_log[] = {"Blue" , "White" ,  "Red"};
+
+    refresh();
+    while(1){
+        for(int i = 0 ; i < 3 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 2 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 2) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+        hero_color = 1;
+        menu_2();
+        break;
+
+    case 1:
+        hero_color = 2;
+        menu_2();
+        break;
+
+    case 2:
+        hero_color = 3;
+        menu_2();
+        break;
+    }
+}
+
+void music_page(){
+    noecho();
+    board();
+    int choice = 0;
+    const char *sign_or_log[] = {"Music1" , "Music2" ,  "Music3" , "OFF"};
+
+    refresh();
+    while(1){
+        for(int i = 0 ; i < 4 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 3 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 3) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+        music = 1;
+        menu_2();
+        break;
+
+    case 1:
+        music = 2;
+        menu_2();
+        break;
+
+    case 2:
+        music = 3;
+        menu_2();
+        break;
+
+    case 3:
+        music = 0;
+        menu_2();
+        break;
+    }
+}
+
 
