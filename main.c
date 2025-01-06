@@ -11,6 +11,10 @@ typedef struct
     char email[100];
     char pass[50];
     int guest;
+    int total_golds;
+    int total_poits;
+    int total_games;
+    char date_joined[60];
 }user_info;
 
 typedef struct{
@@ -76,6 +80,7 @@ char last_pos;
     void closeall(); // close every thing
     void print_info(); //print info during the game
     int check_room(room_info room); //check if the player is in the room or not 
+    void add_gold(room_info room); //to add golds to the room
 
 
 int main(){
@@ -374,7 +379,16 @@ void add_user(user_info u){
     strcpy(temp , u.name);
     strcat(temp , ".txt");
     FILE *file = fopen( temp , "w");
-    fprintf(file , "%s\n%s\n%s" , u.name , u.email , u.pass);
+    time_t rawtime;
+    struct tm * timeinfo;
+    char buffer[80];
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    strcpy(u.date_joined , buffer);
+    fprintf(file , "%s\n%s\n%s\n0\n0\n0\n%s" , u.name , u.email , u.pass , buffer);
     fclose(file);
 }
 
@@ -1073,6 +1087,18 @@ void print_info(){
     mvprintw(13 , COLS - 16 , "Floor:  %d" , player.floor);
 }
 
-
+void add_gold(room_info room){
+    int count = randomint(0 , 18);
+    if(count > 10){
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        mvprintw(xx , yy , "©");
+    }
+    if(count > 16){
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        mvprintw(xx , yy , "©");
+    }
+}
 
 
