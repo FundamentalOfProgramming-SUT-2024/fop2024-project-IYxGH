@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <locale.h>
+#include <wchar.h>
 
 typedef struct 
 {
@@ -38,6 +39,7 @@ typedef struct{
     int E;
 }room_info;
 
+
 user_info u;
 user_info users[1000];
 room_info room[100];
@@ -46,7 +48,7 @@ player_info player;
 int diff_level;
 int hero_color;
 int music;
-char last_pos;
+char last_pos[3];
 int num_of_users;
 
 
@@ -335,6 +337,267 @@ void add_name(char n[]){
     FILE *file = fopen("usernames.txt" , "a");
     fprintf(file , "\n%s" , n);
     fclose(file);
+}
+
+void rankings_page(){
+    clear();
+    board();
+    get_users();
+    sort_users();
+    int page = 1;
+    page = 1;
+            clear();
+            board();
+            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            mvprintw(2 , 10 ,"Rank" );
+            mvprintw(2 , 20 ,"Name" );
+            mvprintw(2 , 35 ,"Points" );
+            mvprintw(2 , 50 ,"Golds" );
+            mvprintw(2 , 65 ,"Games" );
+            mvprintw(2 , 80 ,"Date joined" );
+            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < num_of_users)
+                {
+                    if (i == 0)
+                    {
+                        mvprintw(5 , 100 , "GOAT🐐");
+                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
+                    }
+                    if (i == 1)
+                    {
+                        mvprintw(7 , 100 , "Legend🥈");
+                        attron(A_BOLD | COLOR_PAIR(254) );
+                    }
+                    if (i == 2)
+                    {
+                        mvprintw(9 , 100 , "Master🥉");
+                        attron(A_BOLD | COLOR_PAIR(185) );
+                    }
+                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + 1);
+                    mvprintw(5 + 2*i , 20 , "%s" , users[i].name);
+                    mvprintw(5 + 2*i , 35 , "%d" , users[i].total_points);
+                    mvprintw(5 + 2*i , 50 , "%d" , users[i].total_golds);
+                    mvprintw(5 + 2*i , 65 , "%d" , users[i].total_games);
+                    mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
+                    if(strcmp(users[i].name , u.name) == 0){
+                    attron(A_BOLD);
+                        mvprintw(5 + 2*i , 3 , "you ▶");
+                        attroff(A_BOLD);
+                        //attron(A_ITALIC);
+                    }
+                    
+
+                    if (i == 0 || i == 1 || i == 2)
+                    {
+                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
+                    }
+
+                    mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
+                    for(int i = 0 ; i < 3 ; i++){
+                        if(page == 1 + i){
+                            attron(A_REVERSE);
+                        }
+                        mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
+                        if(page == 1 + i){
+                            attroff(A_REVERSE);
+                        }
+                    }
+                }
+            }
+        
+
+    while (1)
+    {
+        int ch = getch();
+        if(ch == '1'){
+            page = 1;
+            clear();
+            board();
+            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            mvprintw(2 , 10 ,"Rank" );
+            mvprintw(2 , 20 ,"Name" );
+            mvprintw(2 , 35 ,"Points" );
+            mvprintw(2 , 50 ,"Golds" );
+            mvprintw(2 , 65 ,"Games" );
+            mvprintw(2 , 80 ,"Date joined" );
+            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            for (int i = 0; i < 10; i++)
+            {
+                if (i < num_of_users)
+                {
+                    if (i == 0)
+                    {
+                        mvprintw(5 , 100 , "GOAT🐐");
+                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
+                    }
+                    if (i == 1)
+                    {
+                        mvprintw(7 , 100 , "Legend🥈");
+                        attron(A_BOLD | COLOR_PAIR(254) );
+                    }
+                    if (i == 2)
+                    {
+                        mvprintw(9 , 100 , "Master🥉");
+                        attron(A_BOLD | COLOR_PAIR(185) );
+                    }
+                    if(strcmp(users[i].name , u.name) == 0){
+                    attron(A_BOLD);
+                        mvprintw(5 + 2*i , 3 , "you ▶");
+                        attroff(A_BOLD);
+                        //attron(A_ITALIC);
+                    }
+                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + 1);
+                    mvprintw(5 + 2*i , 20 , "%s" , users[i].name);
+                    mvprintw(5 + 2*i , 35 , "%d" , users[i].total_points);
+                    mvprintw(5 + 2*i , 50 , "%d" , users[i].total_golds);
+                    mvprintw(5 + 2*i , 65 , "%d" , users[i].total_games);
+                    mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
+                    if (i == 0 || i == 1 || i == 2)
+                    {
+                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
+                    }
+
+                    mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
+                    for(int i = 0 ; i < 3 ; i++){
+                        if(page == 1 + i){
+                            attron(A_REVERSE);
+                        }
+                        mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
+                        if(page == 1 + i){
+                            attroff(A_REVERSE);
+                        }
+                    }
+                }
+            }
+        }else if (ch == '2' || ch == '3') {
+            page = ch - '0';
+            clear();
+            board();
+            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            mvprintw(2 , 10 ,"Rank" );
+            mvprintw(2 , 20 ,"Name" );
+            mvprintw(2 , 35 ,"Points" );
+            mvprintw(2 , 50 ,"Golds" );
+            mvprintw(2 , 65 ,"Games" );
+            mvprintw(2 , 80 ,"Date joined" );
+            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
+            for (int i = 0; i < 10; i++)
+            {
+                if (i + page*10 - 10 < num_of_users)
+                {
+                    if(strcmp(users[i + page*10 - 10].name , u.name) == 0){
+                    attron(A_BOLD);
+                        mvprintw(5 + 2*i , 3 , "you ▶");
+                        attroff(A_BOLD);
+                        //attron(A_ITALIC);
+                    }
+                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + page*10 - 10 + 1);
+                    mvprintw(5 + 2*i , 20 , "%s" , users[i + page*10 - 10].name);
+                    mvprintw(5 + 2*i , 35 , "%d" , users[i + page*10 - 10].total_points);
+                    mvprintw(5 + 2*i , 50 , "%d" , users[i + page*10 - 10].total_golds);
+                    mvprintw(5 + 2*i , 65 , "%d" , users[i + page*10 - 10].total_games);
+                    mvprintw(5 + 2*i , 80 , "%s" , users[i + page*10 - 10].date_joined);
+                }
+            }
+            mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
+            for(int i = 0 ; i < 3 ; i++){
+                if(page == 1 + i){
+                    attron(A_REVERSE);
+                }
+                mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
+                if(page == 1 + i){
+                    attroff(A_REVERSE);
+                }
+            }
+        }else if (ch == '0')
+        {
+            break;
+        }
+    }
+    menu_2();
+}
+
+void get_users(){
+    FILE *file = fopen("usernames.txt" , "r");
+    char line[256];
+    int count = 0; 
+    while (fgets(line, sizeof(line), file)) {
+        size_t len = strlen(line); 
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+        char temp[100];
+        strcpy(temp , line);
+        strcat(temp , ".txt");
+        char linee[256];
+        FILE *filee = fopen(temp , "r");
+        fgets(linee, sizeof(linee), filee);
+        size_t lene = strlen(linee); 
+        if (lene > 0 && linee[lene - 1] == '\n') {
+            linee[lene - 1] = '\0';
+        }
+        strcpy(users[count].name , linee);
+        fgets(linee, sizeof(linee), filee);
+        lene = strlen(linee); 
+        if (lene > 0 && linee[lene - 1] == '\n') {
+            linee[lene - 1] = '\0';
+        }
+        strcpy(users[count].email , linee);
+        
+        fgets(linee, sizeof(linee), filee);
+        lene = strlen(linee); 
+        if (lene > 0 && linee[lene - 1] == '\n') {
+            linee[lene - 1] = '\0';
+        }
+        strcpy(users[count].pass , linee);
+
+        int num;
+        fscanf(filee , "%d" , &num);
+        users[count].total_golds = num;
+        fscanf(filee , "%d" , &num);
+        users[count].total_points = num;
+        fscanf(filee , "%d" , &num);
+        users[count].total_games = num;
+        fgetc(filee);
+        fgets(linee, sizeof(linee), filee);
+        lene = strlen(linee); 
+        if (lene > 0 && linee[lene - 1] == '\n') {
+            linee[lene - 1] = '\0';
+        }
+        strcpy(users[count].date_joined , linee);
+        count++;
+        fclose(filee);  
+    }
+    num_of_users = count;
+    fclose(file);
+}
+
+void sort_users(){
+    for(int i = 0; i < num_of_users ; i++){
+        for(int j = i ; j < num_of_users ; j++ ){
+            if(users[i].total_points < users[j].total_points){
+                user_info temp;
+                temp = users[i];
+                users[i] = users[j];
+                users[j] = temp;
+            }else if (users[i].total_points == users[j].total_points && users[i].total_golds < users[j].total_golds)
+            {
+                user_info temp;
+                temp = users[i];
+                users[i] = users[j];
+                users[j] = temp;
+            }
+            else if (users[i].total_golds == users[j].total_golds && users[i].total_games < users[j].total_games)
+            {
+                user_info temp;
+                temp = users[i];
+                users[i] = users[j];
+                users[j] = temp;
+            }    
+        }
+    }
 }
 
 void clear_line(int y, int x, int length) {
@@ -874,6 +1137,7 @@ void draw_map(){
             room[10*j + i] = s;
             room[10*j + i].E = 1;
             add_pillar(room[10*j + i]);
+            add_gold(room[10*j + i]);
         }
     }
 
@@ -916,7 +1180,7 @@ void put_player(){
         player.position.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
         player.position.y = (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2;
     }
-    last_pos = '.';
+    strcpy(last_pos , ".");
     mvaddch(player.position.x , player.position.y , '@');
     refresh();
 }
@@ -965,7 +1229,7 @@ void handle_movement(){
         print_info();
         int ch = getch();
         char check;
-        if(ch == '0'){closeall(0);}
+        if(ch == 27){closeall(0);}
         switch (ch)
         {
         case 'w':
@@ -973,9 +1237,10 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -985,9 +1250,10 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -997,9 +1263,10 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -1009,9 +1276,10 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -1021,10 +1289,11 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x--;
                 player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -1033,10 +1302,11 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x--;
                 player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -1045,10 +1315,11 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
                 player.position.y--;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
@@ -1057,20 +1328,21 @@ void handle_movement(){
             if(check == '-' || check == '|' || check == ' ' || check == 'O'){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%c" , last_pos);
+                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
                 player.position.y++;
-                last_pos = mvinch(player.position.x, player.position.y) & A_CHARTEXT;
+                move(player.position.x, player.position.y);
+                innstr(last_pos , 1);
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
-        case 'x':
-            if(last_pos == '%'){
-                player.floor++;
-                last_pos = '.';
-                new_floor();
-            }
-            break;
+        // case 'x':
+        //     if(strcmp(last_pos , "%c" , % ) == 0){
+        //         player.floor++;
+        //         last_pos = '.';
+        //         new_floor();
+        //     }
+        //     break;
         
         default:
             break;
@@ -1109,267 +1381,6 @@ void add_gold(room_info room){
         int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
         int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
         mvprintw(xx , yy , "©");
-    }
-}
-
-void rankings_page(){
-    clear();
-    board();
-    get_users();
-    sort_users();
-    int page = 1;
-    page = 1;
-            clear();
-            board();
-            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            mvprintw(2 , 10 ,"Rank" );
-            mvprintw(2 , 20 ,"Name" );
-            mvprintw(2 , 35 ,"Points" );
-            mvprintw(2 , 50 ,"Golds" );
-            mvprintw(2 , 65 ,"Games" );
-            mvprintw(2 , 80 ,"Date joined" );
-            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            for (int i = 0; i < 10; i++)
-            {
-                if (i < num_of_users)
-                {
-                    if (i == 0)
-                    {
-                        mvprintw(5 , 100 , "GOAT🐐");
-                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
-                    }
-                    if (i == 1)
-                    {
-                        mvprintw(7 , 100 , "Legend🥈");
-                        attron(A_BOLD | COLOR_PAIR(254) );
-                    }
-                    if (i == 2)
-                    {
-                        mvprintw(9 , 100 , "Master🥉");
-                        attron(A_BOLD | COLOR_PAIR(185) );
-                    }
-                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + 1);
-                    mvprintw(5 + 2*i , 20 , "%s" , users[i].name);
-                    mvprintw(5 + 2*i , 35 , "%d" , users[i].total_points);
-                    mvprintw(5 + 2*i , 50 , "%d" , users[i].total_golds);
-                    mvprintw(5 + 2*i , 65 , "%d" , users[i].total_games);
-                    mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
-                    if(strcmp(users[i].name , u.name) == 0){
-                    attron(A_BOLD);
-                        mvprintw(5 + 2*i , 3 , "you ▶");
-                        attroff(A_BOLD);
-                        //attron(A_ITALIC);
-                    }
-                    
-
-                    if (i == 0 || i == 1 || i == 2)
-                    {
-                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
-                    }
-
-                    mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
-                    for(int i = 0 ; i < 3 ; i++){
-                        if(page == 1 + i){
-                            attron(A_REVERSE);
-                        }
-                        mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
-                        if(page == 1 + i){
-                            attroff(A_REVERSE);
-                        }
-                    }
-                }
-            }
-        
-
-    while (1)
-    {
-        int ch = getch();
-        if(ch == '1'){
-            page = 1;
-            clear();
-            board();
-            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            mvprintw(2 , 10 ,"Rank" );
-            mvprintw(2 , 20 ,"Name" );
-            mvprintw(2 , 35 ,"Points" );
-            mvprintw(2 , 50 ,"Golds" );
-            mvprintw(2 , 65 ,"Games" );
-            mvprintw(2 , 80 ,"Date joined" );
-            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            for (int i = 0; i < 10; i++)
-            {
-                if (i < num_of_users)
-                {
-                    if (i == 0)
-                    {
-                        mvprintw(5 , 100 , "GOAT🐐");
-                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
-                    }
-                    if (i == 1)
-                    {
-                        mvprintw(7 , 100 , "Legend🥈");
-                        attron(A_BOLD | COLOR_PAIR(254) );
-                    }
-                    if (i == 2)
-                    {
-                        mvprintw(9 , 100 , "Master🥉");
-                        attron(A_BOLD | COLOR_PAIR(185) );
-                    }
-                    if(strcmp(users[i].name , u.name) == 0){
-                    attron(A_BOLD);
-                        mvprintw(5 + 2*i , 3 , "you ▶");
-                        attroff(A_BOLD);
-                        //attron(A_ITALIC);
-                    }
-                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + 1);
-                    mvprintw(5 + 2*i , 20 , "%s" , users[i].name);
-                    mvprintw(5 + 2*i , 35 , "%d" , users[i].total_points);
-                    mvprintw(5 + 2*i , 50 , "%d" , users[i].total_golds);
-                    mvprintw(5 + 2*i , 65 , "%d" , users[i].total_games);
-                    mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
-                    if (i == 0 || i == 1 || i == 2)
-                    {
-                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
-                    }
-
-                    mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
-                    for(int i = 0 ; i < 3 ; i++){
-                        if(page == 1 + i){
-                            attron(A_REVERSE);
-                        }
-                        mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
-                        if(page == 1 + i){
-                            attroff(A_REVERSE);
-                        }
-                    }
-                }
-            }
-        }else if (ch == '2' || ch == '3') {
-            page = ch - '0';
-            clear();
-            board();
-            attron(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            mvprintw(2 , 10 ,"Rank" );
-            mvprintw(2 , 20 ,"Name" );
-            mvprintw(2 , 35 ,"Points" );
-            mvprintw(2 , 50 ,"Golds" );
-            mvprintw(2 , 65 ,"Games" );
-            mvprintw(2 , 80 ,"Date joined" );
-            attroff(A_BOLD | COLOR_PAIR(3) | A_UNDERLINE);
-            for (int i = 0; i < 10; i++)
-            {
-                if (i + page*10 - 10 < num_of_users)
-                {
-                    if(strcmp(users[i + page*10 - 10].name , u.name) == 0){
-                    attron(A_BOLD);
-                        mvprintw(5 + 2*i , 3 , "you ▶");
-                        attroff(A_BOLD);
-                        //attron(A_ITALIC);
-                    }
-                    mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + page*10 - 10 + 1);
-                    mvprintw(5 + 2*i , 20 , "%s" , users[i + page*10 - 10].name);
-                    mvprintw(5 + 2*i , 35 , "%d" , users[i + page*10 - 10].total_points);
-                    mvprintw(5 + 2*i , 50 , "%d" , users[i + page*10 - 10].total_golds);
-                    mvprintw(5 + 2*i , 65 , "%d" , users[i + page*10 - 10].total_games);
-                    mvprintw(5 + 2*i , 80 , "%s" , users[i + page*10 - 10].date_joined);
-                }
-            }
-            mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
-            for(int i = 0 ; i < 3 ; i++){
-                if(page == 1 + i){
-                    attron(A_REVERSE);
-                }
-                mvprintw(LINES - 4 , COLS/2 + 2*i , "%d" , i + 1 );
-                if(page == 1 + i){
-                    attroff(A_REVERSE);
-                }
-            }
-        }else if (ch == '0')
-        {
-            break;
-        }
-    }
-    menu_2();
-}
-
-void get_users(){
-    FILE *file = fopen("usernames.txt" , "r");
-    char line[256];
-    int count = 0; 
-    while (fgets(line, sizeof(line), file)) {
-        size_t len = strlen(line); 
-        if (len > 0 && line[len - 1] == '\n') {
-            line[len - 1] = '\0';
-        }
-        char temp[100];
-        strcpy(temp , line);
-        strcat(temp , ".txt");
-        char linee[256];
-        FILE *filee = fopen(temp , "r");
-        fgets(linee, sizeof(linee), filee);
-        size_t lene = strlen(linee); 
-        if (lene > 0 && linee[lene - 1] == '\n') {
-            linee[lene - 1] = '\0';
-        }
-        strcpy(users[count].name , linee);
-        fgets(linee, sizeof(linee), filee);
-        lene = strlen(linee); 
-        if (lene > 0 && linee[lene - 1] == '\n') {
-            linee[lene - 1] = '\0';
-        }
-        strcpy(users[count].email , linee);
-        
-        fgets(linee, sizeof(linee), filee);
-        lene = strlen(linee); 
-        if (lene > 0 && linee[lene - 1] == '\n') {
-            linee[lene - 1] = '\0';
-        }
-        strcpy(users[count].pass , linee);
-
-        int num;
-        fscanf(filee , "%d" , &num);
-        users[count].total_golds = num;
-        fscanf(filee , "%d" , &num);
-        users[count].total_points = num;
-        fscanf(filee , "%d" , &num);
-        users[count].total_games = num;
-        fgetc(filee);
-        fgets(linee, sizeof(linee), filee);
-        lene = strlen(linee); 
-        if (lene > 0 && linee[lene - 1] == '\n') {
-            linee[lene - 1] = '\0';
-        }
-        strcpy(users[count].date_joined , linee);
-        count++;
-        fclose(filee);  
-    }
-    num_of_users = count;
-    fclose(file);
-}
-
-void sort_users(){
-    for(int i = 0; i < num_of_users ; i++){
-        for(int j = i ; j < num_of_users ; j++ ){
-            if(users[i].total_points < users[j].total_points){
-                user_info temp;
-                temp = users[i];
-                users[i] = users[j];
-                users[j] = temp;
-            }else if (users[i].total_points == users[j].total_points && users[i].total_golds < users[j].total_golds)
-            {
-                user_info temp;
-                temp = users[i];
-                users[i] = users[j];
-                users[j] = temp;
-            }
-            else if (users[i].total_golds == users[j].total_golds && users[i].total_games < users[j].total_games)
-            {
-                user_info temp;
-                temp = users[i];
-                users[i] = users[j];
-                users[j] = temp;
-            }    
-        }
     }
 }
 
