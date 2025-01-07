@@ -137,6 +137,8 @@ int num_of_users;
     int obstacle_check(int x , int y); //check if move is possible or not
     void pick_item(int x , int y); // pick items from the floor
     void put_spellandweapon();
+    void weapon_list(); // after pressing i , this page will be open to show weapons
+    void spell_list(); //after j , this page will show list of spells
 
 int main(){
     setlocale(LC_ALL, "");
@@ -159,9 +161,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    menu_1();
-    menu_2();
-    // new_game(u);
+    //menu_1();
+    //menu_2();
+    new_game(u);
 
     endwin();
     return 0;
@@ -1238,6 +1240,8 @@ void build_map(){
             corridor_maker(room[3] , room[13] , 2);
         }
     }
+    put_spellandweapon();
+
 }
 
 void put_player(){
@@ -1389,6 +1393,14 @@ void handle_movement(){
             pick_item( player.position.x , player.position.y);
             break;
         
+        case 'i':
+            weapon_list();
+            break;
+
+        case 'j':
+            spell_list();
+            break;
+
         default:
             break;
         }
@@ -1422,7 +1434,49 @@ void pick_item(int x , int y){
     else if (w[x][y].what == 20)
     {
         
-    }  
+    }
+    else if (w[x][y].what == 101)
+    {
+        w[x][y].what = 1;
+        player.weapon[0] += 1; 
+    }
+    else if (w[x][y].what == 102)
+    {
+        w[x][y].what = 1;
+        player.weapon[1] += 1; 
+    }
+    else if (w[x][y].what == 103)
+    {
+        w[x][y].what = 1;
+        player.weapon[2] += 1; 
+    }
+    else if (w[x][y].what == 104)
+    {
+        w[x][y].what = 1;
+        player.weapon[3] += 1; 
+    }
+    else if (w[x][y].what == 105)
+    {
+        w[x][y].what = 1;
+        player.weapon[4] += 1; 
+    }
+    else if (w[x][y].what == 201)
+    {
+        w[x][y].what = 1;
+        player.spell[0] += 1; 
+    }
+    else if (w[x][y].what == 202)
+    {
+        w[x][y].what = 1;
+        player.spell[1] += 1; 
+    }
+    else if (w[x][y].what == 203)
+    {
+        w[x][y].what = 1;
+        player.spell[2] += 1; 
+    }
+    
+      
 }
 
 void print_info(){
@@ -1497,6 +1551,32 @@ void setcolors(){
     }    
 }
 
+void weapon_list(){
+    clear();
+    board();
+    attron(A_BOLD);
+    mvprintw(4 , COLS/2 - 10 , "Mace:        %d  ⚒" , player.weapon[0]);
+    mvprintw(6 , COLS/2 - 10 , "Dagger:      %d  🗡" , player.weapon[1]);
+    mvprintw(8 , COLS/2 - 10 , "Majic Wand:  %d  ⁋" , player.weapon[2]);
+    mvprintw(10 , COLS/2 - 10, "Arrow:       %d  ➳" , player.weapon[3]);
+    mvprintw(12 , COLS/2 - 10, "Sword:       %d  ⚔" , player.weapon[4]);
+    attroff(A_BOLD);
+    mvprintw(16 , COLS/2 - 10 , "press any key to continue...");
+    getch();
+}
+
+void spell_list(){
+    clear();
+    board();
+    attron(A_BOLD);
+    mvprintw(4 , COLS/2 - 10 , "Health Spell:  %d  ♨" , player.spell[0]);
+    mvprintw(6 , COLS/2 - 10 , "Speed Spell:   %d  ⟫" , player.spell[1]);
+    mvprintw(8 , COLS/2 - 10 , "Damage Spell:  %d  ↯" , player.spell[2]);
+    attroff(A_BOLD);
+    mvprintw(16 , COLS/2 - 10 , "press any key to continue...");
+    getch();
+}
+
 void w_reset(){
     for (int i = 0; i < 35; i++)
     {
@@ -1559,7 +1639,38 @@ void w_draw(){
             case 302:
                 mvprintw(i , j , "℗");
                 break;
-            
+
+            case 101:
+                mvprintw(i , j , "⚒");
+                break;
+
+            case 102:
+                mvprintw(i , j , "🗡");
+                break;
+
+            case 103:
+                mvprintw(i , j , "⁋");
+                break;
+
+            case 104:
+                mvprintw(i , j , "➳");
+                break;
+
+            case 105:
+                mvprintw(i , j , "⚔");
+                break;
+
+            case 201:
+                mvprintw(i , j , "♨");
+                break;
+
+            case 202:
+                mvprintw(i , j , "⟫");
+                break;
+
+            case 203:
+                mvprintw(i , j , "↯");
+                break;
             default:
                 break;
             }
@@ -1569,7 +1680,39 @@ void w_draw(){
     
 }
 
+void put_spellandweapon(){
+    int wp = randomint(0 , 8 - diff_level*2);
+    while(wp>0){
+        int wwp = randomint(0 , 5);      
+        int done = 0;
+        while(done == 0){
+            int xx = randomint(2 , 34);
+            int yy = randomint(2, 130);
+            if(w[xx][yy].what == 1){
+                w[xx][yy].what = 101 + wwp;
+                done = 1;
+                wp -= 2;
+            }
+        }
+        
+    }
 
+    int sp = randomint(0 , 8 - diff_level*2);
+    while(sp){
+        int ssp = randomint(0 , 3);
+        int done = 0;
+        while(done == 0){
+            int xx = randomint(2 , 34);
+            int yy = randomint(2, 130);
+            if(w[xx][yy].what == 1){
+                w[xx][yy].what = 201 + ssp;
+                done = 1;
+                sp = 0;
+            }
+        }
+    
+    }
+}
 
 
 
