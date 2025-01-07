@@ -31,7 +31,9 @@ typedef struct{
     int points;
     int gold;
     int hit;
-    int floor;
+    int floor; 
+    int weapon[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
+    int spell[3];  // 0 for health, 1 for speed , 2 for damage
 }player_info;
 
 typedef struct{
@@ -75,12 +77,12 @@ typedef struct
 
 typedef struct{
     int vision;
-    int w;
+    int what;
 }wpos;
 
 
 
-
+wpos w[35][130];
 user_info u;
 user_info users[1000];
 room_info room[100];
@@ -116,7 +118,7 @@ int num_of_users;
     void diff_page(); //page for chosing difficulty level
     void char_color(); //page to chane the hero color
     void music_page(); //page to change the music
-    void draw_map(); //draw the map randomly
+    void build_map(); //draw the map randomly
     void put_player(); //put the player in random room
     void put_stairs(); //put the stairs randomly in one room
     void new_floor(); // go up to next level
@@ -130,6 +132,11 @@ int num_of_users;
     void get_users(); //store the users info in users
     void sort_users(); //to sort the users based on points , golds , games
     void setcolors(); //init the colors
+    void w_reset(); //empty the wpos
+    void w_draw(); // draw whole map based on wposes
+    int obstacle_check(int x , int y); //check if move is possible or not
+    void pick_item(int x , int y); // pick items from the floor
+    void put_spellandweapon();
 
 int main(){
     setlocale(LC_ALL, "");
@@ -140,6 +147,7 @@ int main(){
     cbreak();
     int required_lines = 35;
     int required_cols = 130;
+    diff_level = 1;
     int rows , cols;
     getmaxyx(stdscr, rows, cols);
     if (rows < required_lines || cols < required_cols) { endwin();  
@@ -151,9 +159,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    // menu_1();
-    // menu_2();
-    new_game(u);
+    menu_1();
+    menu_2();
+    // new_game(u);
 
     endwin();
     return 0;
@@ -781,181 +789,6 @@ void menu_2(){
     }
 }
 
-char* generatePassword() {
-    static char password[11];
-    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    int length = 7 + rand() % 4;
-    int hasUpper = 0, hasLower = 0, hasDigit = 0;
-
-    for (int i = 0; i < length; i++) {
-        char randomChar = charset[rand() % (sizeof(charset) - 1)];
-        password[i] = randomChar;
-
-        if (randomChar >= 'A' && randomChar <= 'Z') hasUpper = 1;
-        if (randomChar >= 'a' && randomChar <= 'z') hasLower = 1;
-        if (randomChar >= '0' && randomChar <= '9') hasDigit = 1;
-    }
-
-    if (!hasUpper) password[rand() % length] = 'A' + (rand() % 26);
-    if (!hasLower) password[rand() % length] = 'a' + (rand() % 26);
-    if (!hasDigit) password[rand() % length] = '0' + (rand() % 10);
-
-    password[length] = '\0';
-    return password;
-}
-
-int randomint(int a , int b){
-    return ((rand() % (b -a)) + a);
-}
-
-void new_game(user_info u){
-    clear();
-    room_reset();
-    noecho();
-    curs_set(FALSE);
-    for (int i = 0; i < 50; i++)
-    {
-        room[i].E = 0;
-    }
-    for (int i = 0; i < LINES; i++)
-    {
-        mvaddch(i , COLS-18 , '|');
-    }
-    player.floor = 1;
-    draw_map();
-    put_player();
-    put_stairs();
-    handle_movement();    
-}
-
-void room_generator(pos a , pos b ){
-    int length , width;
-    length = randomint(6 , 15);
-    width = randomint(4 , 8);
-    s.W = width;
-    s.L = length;
-    s.up_left.y = randomint(a.y + 1 , b.y - length - 1);
-    s.up_left.x = randomint(a.x + 1 , b.x - width - 1);
-    s.bottom_right.y = s.up_left.y + length + 1;
-    s.bottom_right.x = s.up_left.x + width + 1;
-    for(int i = 0; i < length + 2 ; i++){
-        mvaddch( s.up_left.x , s.up_left.y + i , '-');
-        mvaddch( s.bottom_right.x , s.bottom_right.y  - i , '-');
-    }
-    for (int i = 0; i < width; i++)
-    {
-        mvaddch( s.up_left.x + 1 + i , s.up_left.y , '|');
-        mvaddch(s.bottom_right.x - 1 - i , s.bottom_right.y , '|');
-    }
-    for(int i = 0; i < width ; i++){
-        for(int j = 0 ; j< length ; j++){
-            mvaddch(s.up_left.x + 1 + i , s.up_left.y + 1 + j , '.');
-        }
-    }
-
-}
-
-void corridor_maker(room_info room_1 , room_info room_2 , int type){
-    if(type == 1){
-        pos s , e;
-        s.y = room_1.bottom_right.y;
-        e.y = room_2.up_left.y;
-        s.x = randomint(room_1.up_left.x + 1 , room_1.bottom_right.x);
-        e.x = randomint(room_2.up_left.x + 1 , room_2.bottom_right.x);
-        while (s.x == e.x)
-        {
-            e.x = randomint(room_1.up_left.x + 1 , room_2.bottom_right.x);
-        }
-        int ver = s.x - e.x; 
-
-        mvaddch(s.x , s.y , '+');
-        mvaddch(e.x , e.y , '+');
-
-        int break_px = randomint(s.y + 2 , e.y - 1) - s.y;
-        pos wheretoput;
-        wheretoput.x = s.x;
-        wheretoput.y = s.y + 1;
-        for (int i = 0; i < break_px; i++)
-        {
-            mvaddch(wheretoput.x , wheretoput.y , '#');
-            wheretoput.y++;
-        }
-        if(ver < 0){
-            for(int i = 0; i > ver ; i--){
-                mvaddch(wheretoput.x , wheretoput.y , '#');
-                wheretoput.x++;
-            }
-        }else{
-            for(int i = 0; i < ver ; i++){
-                mvaddch(wheretoput.x , wheretoput.y , '#');
-                wheretoput.x--;
-            }
-        }
-        while(wheretoput.y != e.y){
-            mvaddch(wheretoput.x , wheretoput.y , '#');
-            wheretoput.y++;
-            if(wheretoput.y > 2000){
-                break;
-            }
-        }
-        
-    }else if(type == 2){
-        pos s , e;
-        s.x = room_1.bottom_right.x;
-        e.x = room_2.up_left.x;
-        s.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
-        e.y = randomint(room_2.up_left.y + 1 , room_2.bottom_right.y);
-        while (s.y == e.y)
-        {
-            e.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
-        }
-        int ver = s.y - e.y; 
-
-        mvaddch(s.x , s.y , '+');
-        mvaddch(e.x , e.y , '+');
-
-        int break_px = randomint(s.x + 2 , e.x - 1) - s.x;
-        pos wheretoput;
-        wheretoput.x = s.x + 1;
-        wheretoput.y = s.y;
-        for (int i = 0; i < break_px; i++)
-        {
-            mvaddch(wheretoput.x , wheretoput.y , '#');
-            wheretoput.x++;
-        }
-        if(ver < 0){
-            for(int i = 0; i > ver ; i--){
-                mvaddch(wheretoput.x , wheretoput.y , '#');
-                wheretoput.y++;
-            }
-        }else{
-            for(int i = 0; i < ver ; i++){
-                mvaddch(wheretoput.x , wheretoput.y , '#');
-                wheretoput.y--;
-            }
-        }
-        while(wheretoput.x != e.x){
-            mvaddch(wheretoput.x , wheretoput.y , '#');
-            wheretoput.x++;
-            if(wheretoput.x > 2000){
-                break;
-            }
-        }
-    }else if(type == 3){
-
-    }
-}
-
-void add_pillar(room_info room){
-    int num = randomint(0,5);
-    for (int i = 0; i < num; i++)
-    {
-        int xx = randomint(room.up_left.x + 2 , room.bottom_right.x -1);
-        int yy = randomint(room.up_left.y + 2 , room.bottom_right.y -1);
-        mvaddch(xx , yy , 'O');
-    }
-}
-
 void setting_page(){
     noecho();
     board();
@@ -1137,7 +970,201 @@ void music_page(){
     }
 }
 
-void draw_map(){
+char* generatePassword() {
+    static char password[11];
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int length = 7 + rand() % 4;
+    int hasUpper = 0, hasLower = 0, hasDigit = 0;
+
+    for (int i = 0; i < length; i++) {
+        char randomChar = charset[rand() % (sizeof(charset) - 1)];
+        password[i] = randomChar;
+
+        if (randomChar >= 'A' && randomChar <= 'Z') hasUpper = 1;
+        if (randomChar >= 'a' && randomChar <= 'z') hasLower = 1;
+        if (randomChar >= '0' && randomChar <= '9') hasDigit = 1;
+    }
+
+    if (!hasUpper) password[rand() % length] = 'A' + (rand() % 26);
+    if (!hasLower) password[rand() % length] = 'a' + (rand() % 26);
+    if (!hasDigit) password[rand() % length] = '0' + (rand() % 10);
+
+    password[length] = '\0';
+    return password;
+}
+
+int randomint(int a , int b){
+    return ((rand() % (b -a)) + a);
+}
+
+void new_game(user_info u){
+    clear();
+    room_reset();
+    w_reset();
+    noecho();
+    curs_set(FALSE);
+
+    player.floor = 1;
+    build_map();
+    put_player();
+    put_stairs();
+    handle_movement();    
+}
+
+void room_generator(pos a , pos b ){
+    int length , width;
+    length = randomint(6 , 15);
+    width = randomint(4 , 8);
+    s.W = width;
+    s.L = length;
+    s.up_left.y = randomint(a.y + 1 , b.y - length - 1);
+    s.up_left.x = randomint(a.x + 1 , b.x - width - 1);
+    s.bottom_right.y = s.up_left.y + length + 1;
+    s.bottom_right.x = s.up_left.x + width + 1;
+    for(int i = 0; i < length + 2 ; i++){
+        w[s.up_left.x][s.up_left.y + i].what = 3;
+        w[s.bottom_right.x][s.bottom_right.y - i].what = 3;
+    }
+    for (int i = 0; i < width; i++)
+    {
+        // mvaddch( s.up_left.x + 1 + i , s.up_left.y , '|');
+        // mvaddch(s.bottom_right.x - 1 - i , s.bottom_right.y , '|');
+        w[s.up_left.x + 1 + i][s.up_left.y].what = 2;
+        w[s.bottom_right.x - 1 - i][s.bottom_right.y].what = 2;
+    }
+    for(int i = 0; i < width ; i++){
+        for(int j = 0 ; j< length ; j++){
+            // mvaddch(s.up_left.x + 1 + i , s.up_left.y + 1 + j , '.');
+            w[s.up_left.x + 1 + i][s.up_left.y + 1 + j].what = 1;
+        }
+    }
+
+}
+
+void corridor_maker(room_info room_1 , room_info room_2 , int type){
+    if(type == 1){
+        pos s , e;
+        s.y = room_1.bottom_right.y;
+        e.y = room_2.up_left.y;
+        s.x = randomint(room_1.up_left.x + 1 , room_1.bottom_right.x);
+        e.x = randomint(room_2.up_left.x + 1 , room_2.bottom_right.x);
+        while (s.x == e.x)
+        {
+            e.x = randomint(room_1.up_left.x + 1 , room_2.bottom_right.x);
+        }
+        int ver = s.x - e.x; 
+
+        // mvaddch(s.x , s.y , '+');
+        // mvaddch(e.x , e.y , '+');
+        w[s.x][s.y].what = 5;
+        w[e.x][e.y].what = 5;
+
+        int break_px = randomint(s.y + 2 , e.y - 1) - s.y;
+        pos wheretoput;
+        wheretoput.x = s.x;
+        wheretoput.y = s.y + 1;
+        for (int i = 0; i < break_px; i++)
+        {
+            // mvaddch(wheretoput.x , wheretoput.y , '#');
+            w[wheretoput.x][wheretoput.y].what = 6;
+            wheretoput.y++;
+        }
+        if(ver < 0){
+            for(int i = 0; i > ver ; i--){
+                // mvaddch(wheretoput.x , wheretoput.y , '#');
+                w[wheretoput.x][wheretoput.y].what = 6;
+
+                wheretoput.x++;
+            }
+        }else{
+            for(int i = 0; i < ver ; i++){
+                // mvaddch(wheretoput.x , wheretoput.y , '#');
+                w[wheretoput.x][wheretoput.y].what = 6;
+                wheretoput.x--;
+            }
+        }
+        while(wheretoput.y != e.y){
+            // mvaddch(wheretoput.x , wheretoput.y , '#');
+            w[wheretoput.x][wheretoput.y].what = 6;
+            wheretoput.y++;
+            if(wheretoput.y > 2000){
+                break;
+            }
+        }
+        
+    }else if(type == 2){
+        pos s , e;
+        s.x = room_1.bottom_right.x;
+        e.x = room_2.up_left.x;
+        s.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
+        e.y = randomint(room_2.up_left.y + 1 , room_2.bottom_right.y);
+        while (s.y == e.y)
+        {
+            e.y = randomint(room_1.up_left.y + 1 , room_1.bottom_right.y);
+        }
+        int ver = s.y - e.y; 
+
+        // mvaddch(s.x , s.y , '+');
+        // mvaddch(e.x , e.y , '+');
+        w[s.x][s.y].what = 5;
+        w[e.x][e.y].what = 5;
+        
+        int break_px = randomint(s.x + 2 , e.x - 1) - s.x;
+        pos wheretoput;
+        wheretoput.x = s.x + 1;
+        wheretoput.y = s.y;
+        for (int i = 0; i < break_px; i++)
+        {
+            // mvaddch(wheretoput.x , wheretoput.y , '#');
+            w[wheretoput.x][wheretoput.y].what = 6;
+            wheretoput.x++;
+        }
+        if(ver < 0){
+            for(int i = 0; i > ver ; i--){
+                // mvaddch(wheretoput.x , wheretoput.y , '#');
+                w[wheretoput.x][wheretoput.y].what = 6;
+                wheretoput.y++;
+            }
+        }else{
+            for(int i = 0; i < ver ; i++){
+                // mvaddch(wheretoput.x , wheretoput.y , '#');
+                w[wheretoput.x][wheretoput.y].what = 6;
+                wheretoput.y--;
+            }
+        }
+        while(wheretoput.x != e.x){
+            // mvaddch(wheretoput.x , wheretoput.y , '#');
+            w[wheretoput.x][wheretoput.y].what = 6;
+            wheretoput.x++;
+            if(wheretoput.x > 2000){
+                break;
+            }
+        }
+    }else if(type == 3){
+
+    }
+}
+
+void add_pillar(room_info room){
+    int num = randomint(0,5);
+    for (int i = 0; i < num; i++)
+    {
+        int xx = randomint(room.up_left.x + 2 , room.bottom_right.x -1);
+        int yy = randomint(room.up_left.y + 2 , room.bottom_right.y -1);
+        // mvaddch(xx , yy , 'O');
+        w[xx][yy].what = 4;
+    }
+}
+
+int obstacle_check(int x , int y){
+    if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0){
+        return 1;
+    }else{
+        return 0;
+    }
+}
+
+void build_map(){
         for (int i = 0; i < 4; i++)
     {
         for(int j =0 ; j < 2 ; j++){
@@ -1156,23 +1183,23 @@ void draw_map(){
             pos a;
             pos b;
             a.x = 1 + 19*j;
-            b.x = 16 + 19*j;
+            b.x = 15 + 19*j;
             if (i==0){
-                a.y = COLS/2 - 60;
-                b.y = COLS/2 - 36;
+                a.y = 3;
+                b.y = 26;
             }
             else if (i==1)
             {
-                a.y = COLS/2 - 32;
-                b.y = COLS/2 - 7;
+                a.y = 34;
+                b.y = 56;
             }
             else if(i==2){
-                a.y = COLS/2;
-                b.y = COLS/2 + 22;
+                a.y = 64;
+                b.y = 86;
             }
             else if(i==3){
-                a.y = COLS/2 + 28;
-                b.y = COLS/2 + 50;
+                a.y = 94;
+                b.y = 116;
             }
             room_generator(a , b);
             room[10*j + i] = s;
@@ -1211,19 +1238,25 @@ void draw_map(){
             corridor_maker(room[3] , room[13] , 2);
         }
     }
-    
 }
 
 void put_player(){
-    int ii = randomint(0,4);
-    int jj = randomint(0,2);
-    if(room[10*jj + ii].E == 1){
-        player.position.x = (room[10*jj + ii].up_left.x + room[10*jj + ii].bottom_right.x)/2;
-        player.position.y = (room[10*jj + ii].up_left.y + room[10*jj + ii].bottom_right.y)/2;
+    int done = 0;
+    while(done == 0){
+        int ii = randomint(0,4);
+        int jj = randomint(0,2);
+        if(room[10*jj + ii].E == 1){
+            while(done == 0){
+                int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
+                int yy = randomint(room[10*jj + ii].up_left.y +1 , room[10*jj + ii].bottom_right.y );
+                if(w[xx][yy].what == 1){
+                    player.position.x = xx;
+                    player.position.y = yy;
+                    done = 1;
+                }
+            }
+        }
     }
-    strcpy(last_pos , ".");
-    mvaddch(player.position.x , player.position.y , '@');
-    refresh();
 }
 
 void put_stairs(){
@@ -1232,11 +1265,18 @@ void put_stairs(){
         int ii = randomint(0,4);
         int jj = randomint(0,2);
         
-        if(room[10*jj + ii].E == 1 && check_room(room[10*jj + ii]) == 0 ){
-            int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
-            int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y);
-            mvaddch(xx , yy , '%');
-            done = 1;
+        if(room[10*jj + ii].E == 1 && check_room(room[10*jj + ii]) == 0){
+            while (done == 0)
+            {
+                int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
+                int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y);
+                if (w[xx][yy].what == 1)
+                {
+                    w[xx][yy].what = 7;
+                    done = 1;
+                }
+            }
+            
         }
     }
     refresh();
@@ -1245,20 +1285,14 @@ void put_stairs(){
 void new_floor(){
     clear();
     room_reset();
+    w_reset();
     noecho();
     curs_set(FALSE);
-    char check = mvinch(player.position.x , player.position.y) & A_CHARTEXT;
-    while(check != '.'){
-        clear();
+    while(w[player.position.x][player.position.y].what != 1){
+        w_reset();
         room_reset();
-        draw_map();
-        check = mvinch(player.position.x , player.position.y) & A_CHARTEXT;
+        build_map();
     }
-    for (int i = 0; i < LINES; i++)
-    {
-        mvaddch(i , COLS-18 , '|');
-    }
-    mvaddch(player.position.x , player.position.y , '@');
     put_stairs();
     refresh();
     handle_movement();
@@ -1267,122 +1301,92 @@ void new_floor(){
 void handle_movement(){
     while (1)
     {
+        clear();
         print_info();
+        w_draw();
+        mvaddch(player.position.x , player.position.y , '@');
+        refresh();
         int ch = getch();
-        char check;
         if(ch == 27){closeall(0);}
         switch (ch)
         {
         case 'w':
-            check = mvinch(player.position.x - 1, player.position.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x - 1 , player.position.y)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x--;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
         
         case 's':
-            check = mvinch(player.position.x + 1, player.position.y) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x + 1 , player.position.y)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
 
         case 'a':
-            check = mvinch(player.position.x , player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x  , player.position.y - 1)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.y--;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
 
         case 'd':
-            check = mvinch(player.position.x , player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x  , player.position.y + 1)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.y++;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
 
         case 'q':
-            check = mvinch(player.position.x - 1, player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x - 1 , player.position.y - 1)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x--;
                 player.position.y--;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
-        case 'e': 
-            check = mvinch(player.position.x - 1, player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+
+        case 'z': 
+            if(obstacle_check(player.position.x + 1 , player.position.y - 1)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
-                player.position.x--;
-                player.position.y++;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
-            }
-            break;
-        case 'z':
-            check = mvinch(player.position.x + 1, player.position.y - 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
-                break;
-            }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
                 player.position.y--;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
+
+        case 'e':
+            if(obstacle_check(player.position.x - 1 , player.position.y + 1)){
+                break;
+            }else{
+                player.position.x--;
+                player.position.y++;
+            }
+            break;
+
         case 'c':
-            check = mvinch(player.position.x + 1, player.position.y + 1) & A_CHARTEXT;
-            if(check == '-' || check == '|' || check == ' ' || check == 'O'){
+            if(obstacle_check(player.position.x + 1 , player.position.y + 1)){
                 break;
             }else{
-                mvprintw(player.position.x , player.position.y , "%s" , last_pos);
                 player.position.x++;
                 player.position.y++;
-                move(player.position.x, player.position.y);
-                innstr(last_pos , 1);
-                mvaddch(player.position.x , player.position.y , '@');
             }
             break;
+
         case 'x':
-            if(strcmp(last_pos , "%" ) == 0){
+            if(w[player.position.x][player.position.y].what == 7){
                 player.floor++;
-                strcpy(last_pos , ".");
                 new_floor();
             }
+            break;
+
+        case 'p':
+            pick_item( player.position.x , player.position.y);
             break;
         
         default:
@@ -1400,28 +1404,81 @@ int check_room(room_info room){
     return 0;
 }
 
+void pick_item(int x , int y){
+    if (w[x][y].what == 301)
+    {
+        w[x][y].what = 1;
+        int value = randomint(3 , 10);
+        value /= diff_level;
+        if(value == 0){value++;}
+        player.gold += value;
+    }
+    else if (w[x][y].what == 302)
+    {
+        w[x][y].what = 1;
+        int value = 30 - 5*diff_level;
+        player.gold += value;
+    }
+    else if (w[x][y].what == 20)
+    {
+        
+    }  
+}
+
 void print_info(){
     mvprintw(1 , COLS - 14 , "---%s---" , u.name);
+    for (int i = 0; i < LINES; i++)
+    {
+        mvaddch(i , COLS-18 , '|');
+    }
     for(int i = 0 ; i < 17 ; i ++){
         mvprintw(2 , COLS - i , "■");  //⇔▬▲▼■
         mvprintw(9 , COLS - i , "■");
     }
-    mvprintw(11 , COLS - 16 , "Gold:   %d" , player.gold);
-    mvprintw(12 , COLS - 16 , "Hits:   %d" , player.hit);
-    mvprintw(13 , COLS - 16 , "Floor:  %d" , player.floor);
+    switch (diff_level)
+    {
+        case 1:
+            mvprintw(11 , COLS - 16 , "Difficulty: Easy");
+            break;
+        
+        case 2:
+            mvprintw(11 , COLS - 16 , "Difficulty: Medium");
+            break;
+
+        case 3:
+            mvprintw(11 , COLS - 16 , "Difficulty: Hard");
+            break;
+        default:
+            break;
+    }
+    mvprintw(12 , COLS - 16 , "Gold:   %d" , player.gold);
+    mvprintw(13 , COLS - 16 , "Hits:   %d" , player.hit);
+    mvprintw(14 , COLS - 16 , "Floor:  %d" , player.floor);
+    mvprintw(16 , COLS - 16 , "Press \"i\" for");
+    mvprintw(17 , COLS - 16 , "weapon list");
+    mvprintw(19 , COLS - 16 , "Press \"j\" for");
+    mvprintw(20 , COLS - 16 , "spell list");
 }
 
 void add_gold(room_info room){
-    int count = randomint(0 , 18);
-    if(count > 10){
+    int count = randomint(0 , 100);
+    if(count > 95){
         int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
         int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
-        mvprintw(xx , yy , "©");
+        // mvprintw(xx , yy , "©");
+        w[xx][yy].what = 302;
     }
-    if(count > 16){
+    else if(count > 55){
         int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
         int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
-        mvprintw(xx , yy , "©");
+        // mvprintw(xx , yy , "©");
+        w[xx][yy].what = 301;
+        if(count > 80){
+            int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+            int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+            // mvprintw(xx , yy , "©");
+            w[xx][yy].what = 301;
+        }
     }
 }
 
@@ -1439,6 +1496,83 @@ void setcolors(){
         init_pair(i + 307, COLOR_WHITE, i);
     }    
 }
+
+void w_reset(){
+    for (int i = 0; i < 35; i++)
+    {
+        for (int j = 0; j < 130; j++)
+        {
+            w[i][j].what = 0;
+            w[i][j].vision = 0;
+        }
+        
+    }
+    
+}
+
+void w_draw(){
+    for (int i = 0; i < 35; i++)
+    {
+        for (int j = 0; j < 130; j++)
+        {
+            switch (w[i][j].what)
+            {
+            case 1:
+                mvprintw(i , j , ".");
+                break;
+            case 2:
+                mvprintw(i,j , "|");
+                break;
+
+            case 3:
+                mvprintw(i , j , "-");
+                break;
+            
+            case 4:
+                mvprintw(i , j , "O");
+                break;
+
+            case 5:
+                mvprintw(i , j , "+");
+                break;
+
+            case 6:
+                mvprintw(i , j , "#");
+                break;
+
+            case 7:
+                mvprintw(i , j , "▲");            
+                break;
+
+            case 8:
+                mvprintw(i , j , "⌀");
+                break;
+
+            case 20:
+                mvprintw(i , j , "◒");
+                break;
+
+            case 301:
+                mvprintw(i , j , "©");
+                break;
+
+            case 302:
+                mvprintw(i , j , "℗");
+                break;
+            
+            default:
+                break;
+            }
+        }
+        
+    }
+    
+}
+
+
+
+
+
 
 
 
