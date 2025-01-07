@@ -5,6 +5,9 @@
 #include <string.h>
 #include <locale.h>
 #include <wchar.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+
 
 typedef struct 
 {
@@ -37,7 +40,45 @@ typedef struct{
     int L;
     int W;
     int E;
+    int type; // 1 for normal , 2 for trasure , 3 for enchant , 4 for nightmare
 }room_info;
+
+typedef struct
+{
+    int E[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
+    pos P[5];
+}weapon_info;
+typedef struct 
+{
+    int E[3]; // 0 for health, 1 for speed , 2 for damage 
+    pos P[3]; 
+}spell_info;
+
+typedef struct 
+{
+    int num_pillar;
+    pos pillar[100];
+    int num_gold;
+    pos gold[50];
+    weapon_info weopons;
+    spell_info spells;
+    int num_gem;
+    pos gem[50];
+    int num_trap;
+    pos trap[50];
+    int num_food;
+    pos food[50];
+    int num_mkey;
+    pos mkey;
+
+}special_items;
+
+typedef struct{
+    int vision;
+    int w;
+}wpos;
+
+
 
 
 user_info u;
@@ -110,9 +151,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    menu_1();
-    menu_2();
-    // new_game(u);
+    // menu_1();
+    // menu_2();
+    new_game(u);
 
     endwin();
     return 0;
@@ -1336,13 +1377,13 @@ void handle_movement(){
                 mvaddch(player.position.x , player.position.y , '@');
             }
             break;
-        // case 'x':
-        //     if(strcmp(last_pos , "%c" , % ) == 0){
-        //         player.floor++;
-        //         last_pos = '.';
-        //         new_floor();
-        //     }
-        //     break;
+        case 'x':
+            if(strcmp(last_pos , "%" ) == 0){
+                player.floor++;
+                strcpy(last_pos , ".");
+                new_floor();
+            }
+            break;
         
         default:
             break;
