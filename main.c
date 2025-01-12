@@ -141,7 +141,8 @@ int num_of_users;
     void weapon_list(); // after pressing i , this page will be open to show weapons
     void spell_list(); //after j , this page will show list of spells
     void w_redraw(int x , int y); //to avoid crashes
-
+    void treasure_room(room_info room); // make a room treasure room
+    void victory_page(); // goes to victory page
 
 int main(){
     setlocale(LC_ALL, "");
@@ -1046,6 +1047,15 @@ void room_generator(pos a , pos b ){
 
 }
 
+void victory_page(){
+    clear();
+    board();
+    mvprintw(LINES/2 - 5 , COLS/2 - 7 , "You Won!");
+    mvprintw(LINES/2 - 5 , COLS/2 - 7 , "Golds: %d" , player.gold);
+    getch();
+    menu_2();
+}
+
 void corridor_maker(room_info room_1 , room_info room_2 , int type){
     if(type == 1){
         pos s , e;
@@ -1162,7 +1172,8 @@ void add_pillar(room_info room){
 }
 
 int obstacle_check(int x , int y){
-    if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0){
+    if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0
+    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004){
         return 1;
     }else{
         return 0;
@@ -1268,11 +1279,22 @@ void put_player(){
 
 void put_stairs(){
     int done = 0;
+    int what = 1;
+    if(player.floor == 4){
+        if(randomint(0 , 2)){
+            what = 0;
+        }
+    }else if (player.floor == 5)
+    {
+        what = 0;
+    }
+    
     while(done == 0){
         int ii = randomint(0,4);
         int jj = randomint(0,2);
         
         if(room[10*jj + ii].E == 1 && check_room(room[10*jj + ii]) == 0){
+            
             while (done == 0)
             {
                 int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
@@ -1282,8 +1304,12 @@ void put_stairs(){
                     w[xx][yy].what = 7;
                     done = 1;
                 }
+            }   
+            if (what == 0)
+            {
+                treasure_room(room[10*jj + ii]);
             }
-            
+        
         }
     }
     refresh();
@@ -1389,6 +1415,9 @@ void handle_movement(){
             if(w[player.position.x][player.position.y].what == 7){
                 player.floor++;
                 new_floor();
+            }
+            else if(w[player.position.x][player.position.y].what == 1007){
+                victory_page();
             }
             break;
 
@@ -1554,6 +1583,8 @@ void setcolors(){
     init_pair(12 , 160 , 0 );
     init_pair(13 , 226 , 0 );
     init_pair(14 , 0 , 226);
+    init_pair(15 , 204 , 0);
+    init_pair(16 , 220 , 0);
       
 }
 
@@ -1692,6 +1723,37 @@ void w_draw(){
             case 203:
                 mvprintw(i , j , "↯");
                 break;
+
+            case 1001:
+                attron(COLOR_PAIR(15));
+                mvprintw(i , j , ".");
+                attroff(COLOR_PAIR(15));
+                break;
+
+            case 1002:
+                attron(COLOR_PAIR(16));
+                mvprintw(i,j , "|");
+                attroff(COLOR_PAIR(16));
+                break;
+
+            case 1003:
+                attron(COLOR_PAIR(16));
+                mvprintw(i , j , "-");
+                attroff(COLOR_PAIR(16));
+                break;
+            
+            case 1004:
+                attron(COLOR_PAIR(12));
+                mvprintw(i , j , "O");
+                attroff(COLOR_PAIR(12));
+                break;
+
+            case 1007:
+                attron(COLOR_PAIR(11));
+                mvprintw(i , j , "⌂");
+                attroff(COLOR_PAIR(11));
+                break;
+
             default:
                 break;
             }
@@ -1735,7 +1797,26 @@ void put_spellandweapon(){
     }
 }
 
-
+void treasure_room(room_info room){
+    for (int i = room.up_left.x; i <= room.bottom_right.x ; i++)
+    {
+        for (int j = room.up_left.y; j <= room.bottom_right.y; j++)
+        {
+            if (w[i][j].what >= 1 && w[i][j].what <=4)
+            {
+                w[i][j].what += 1000;
+            }else if (w[i][j].what == 7)
+            {
+                w[i][j].what += 1000;
+            }
+            
+            
+        }
+        
+    }
+    
+    
+}
 
 
 
