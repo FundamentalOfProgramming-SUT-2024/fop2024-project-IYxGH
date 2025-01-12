@@ -50,6 +50,7 @@ typedef struct
     int E[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
     pos P[5];
 }weapon_info;
+
 typedef struct 
 {
     int E[3]; // 0 for health, 1 for speed , 2 for damage 
@@ -139,6 +140,8 @@ int num_of_users;
     void put_spellandweapon();
     void weapon_list(); // after pressing i , this page will be open to show weapons
     void spell_list(); //after j , this page will show list of spells
+    void w_redraw(int x , int y); //to avoid crashes
+
 
 int main(){
     setlocale(LC_ALL, "");
@@ -161,8 +164,8 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    //menu_1();
-    //menu_2();
+    // menu_1();
+    // menu_2();
     new_game(u);
 
     endwin();
@@ -414,17 +417,17 @@ void rankings_page(){
                     if (i == 0)
                     {
                         mvprintw(5 , 100 , "GOAT🐐");
-                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
+                        attron(A_BOLD | A_BLINK | COLOR_PAIR(7) );
                     }
                     if (i == 1)
                     {
                         mvprintw(7 , 100 , "Legend🥈");
-                        attron(A_BOLD | COLOR_PAIR(254) );
+                        attron(A_BOLD | COLOR_PAIR(8));
                     }
                     if (i == 2)
                     {
                         mvprintw(9 , 100 , "Master🥉");
-                        attron(A_BOLD | COLOR_PAIR(185) );
+                        attron(A_BOLD | COLOR_PAIR(9));
                     }
                     mvprintw(5 + 2*i , 10 , "%d.\t\t\t\t\t\t\t\t\t\t" , i + 1);
                     mvprintw(5 + 2*i , 20 , "%s" , users[i].name);
@@ -433,7 +436,7 @@ void rankings_page(){
                     mvprintw(5 + 2*i , 65 , "%d" , users[i].total_games);
                     mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
                     if(strcmp(users[i].name , u.name) == 0){
-                    attron(A_BOLD);
+                        attron(A_BOLD);
                         mvprintw(5 + 2*i , 3 , "you ▶");
                         attroff(A_BOLD);
                         //attron(A_ITALIC);
@@ -442,7 +445,7 @@ void rankings_page(){
 
                     if (i == 0 || i == 1 || i == 2)
                     {
-                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
+                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(9) );
                     }
 
                     mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
@@ -481,17 +484,17 @@ void rankings_page(){
                     if (i == 0)
                     {
                         mvprintw(5 , 100 , "GOAT🐐");
-                        attron(A_BOLD | A_BLINK | COLOR_PAIR(233) );
+                        attron(A_BOLD | A_BLINK | COLOR_PAIR(7) );
                     }
                     if (i == 1)
                     {
                         mvprintw(7 , 100 , "Legend🥈");
-                        attron(A_BOLD | COLOR_PAIR(254) );
+                        attron(A_BOLD | COLOR_PAIR(8) );
                     }
                     if (i == 2)
                     {
                         mvprintw(9 , 100 , "Master🥉");
-                        attron(A_BOLD | COLOR_PAIR(185) );
+                        attron(A_BOLD | COLOR_PAIR(9) );
                     }
                     if(strcmp(users[i].name , u.name) == 0){
                     attron(A_BOLD);
@@ -507,7 +510,7 @@ void rankings_page(){
                     mvprintw(5 + 2*i , 80 , "%s" , users[i].date_joined);
                     if (i == 0 || i == 1 || i == 2)
                     {
-                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(143) );
+                        attroff(A_BOLD | A_BLINK | COLOR_PAIR(9) );
                     }
 
                     mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
@@ -1543,12 +1546,15 @@ void setcolors(){
     init_pair(4, COLOR_WHITE , COLOR_GREEN );
     init_pair(5, COLOR_WHITE , COLOR_CYAN);
     init_pair(6, COLOR_WHITE , COLOR_BLACK + 8);
-    for (int i = 0; i < COLORS; i++) {
-        init_pair(i + 7, COLOR_RED, i);
-    }
-    for (int i = 0; i < COLORS; i++) {
-        init_pair(i + 307, COLOR_WHITE, i);
-    }    
+    init_pair(7 ,  16 , 226);
+    init_pair(8 ,  16 , 51);
+    init_pair(9 ,  16 , 179);
+    init_pair(10 , 34 , 0 );
+    init_pair(11 , 51 , 0 );
+    init_pair(12 , 160 , 0 );
+    init_pair(13 , 226 , 0 );
+    init_pair(14 , 0 , 226);
+      
 }
 
 void weapon_list(){
@@ -1598,18 +1604,27 @@ void w_draw(){
             switch (w[i][j].what)
             {
             case 1:
+                attron(COLOR_PAIR(11));
                 mvprintw(i , j , ".");
+                attroff(COLOR_PAIR(11));
                 break;
+
             case 2:
+                attron(COLOR_PAIR(10));
                 mvprintw(i,j , "|");
+                attroff(COLOR_PAIR(10));
                 break;
 
             case 3:
+                attron(COLOR_PAIR(10));
                 mvprintw(i , j , "-");
+                attroff(COLOR_PAIR(10));
                 break;
             
             case 4:
+                attron(COLOR_PAIR(12));
                 mvprintw(i , j , "O");
+                attroff(COLOR_PAIR(12));
                 break;
 
             case 5:
@@ -1617,7 +1632,9 @@ void w_draw(){
                 break;
 
             case 6:
+                attron(A_REVERSE);
                 mvprintw(i , j , "#");
+                attroff(A_REVERSE);
                 break;
 
             case 7:
@@ -1633,11 +1650,15 @@ void w_draw(){
                 break;
 
             case 301:
+                attron(COLOR_PAIR(13));
                 mvprintw(i , j , "©");
+                attroff(COLOR_PAIR(13));
                 break;
 
             case 302:
+                attron(COLOR_PAIR(14));
                 mvprintw(i , j , "℗");
+                attroff(COLOR_PAIR(14));
                 break;
 
             case 101:
