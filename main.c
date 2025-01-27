@@ -31,7 +31,10 @@ typedef struct{
     int points;
     int gold;
     int hit;
+    int Mhit;
     int floor; 
+    int fullness;
+    int Mfullness;
     int weapon[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
     int spell[3];  // 0 for health, 1 for speed , 2 for damage
 }player_info;
@@ -129,6 +132,7 @@ int num_of_users;
     void print_info(); //print info during the game
     int check_room(room_info room); //check if the player is in the room or not 
     void add_gold(room_info room); //to add golds to the room
+    void add_trap(room_info room); //to add traps to the room
     void rankings_page(); // ranking page
     void get_users(); //store the users info in users
     void sort_users(); //to sort the users based on points , golds , games
@@ -143,6 +147,7 @@ int num_of_users;
     void w_redraw(int x , int y); //to avoid crashes
     void treasure_room(room_info room); // make a room treasure room
     void victory_page(); // goes to victory page
+    void check_trap(); // check if there is a trap or not
 
 int main(){
     setlocale(LC_ALL, "");
@@ -1011,6 +1016,10 @@ void new_game(user_info u){
     curs_set(FALSE);
 
     player.floor = 1;
+    player.Mfullness = 8 - diff_level; 
+    player.fullness = 8 - diff_level; 
+    player.Mhit = (8 - diff_level) * 20;
+    player.hit = (8 - diff_level) * 20;
     build_map();
     put_player();
     put_stairs();
@@ -1222,6 +1231,7 @@ void build_map(){
             room[10*j + i].E = 1;
             add_pillar(room[10*j + i]);
             add_gold(room[10*j + i]);
+            add_trap(room[10*j + i]);
         }
     }
 
@@ -1333,8 +1343,9 @@ void new_floor(){
 
 void handle_movement(){
     while (1)
-    {
+    {   
         clear();
+        check_trap();
         print_info();
         w_draw();
         mvaddch(player.position.x , player.position.y , '@');
@@ -1436,6 +1447,7 @@ void handle_movement(){
         default:
             break;
         }
+        
     }
 }
 
@@ -1540,10 +1552,23 @@ void print_info(){
     mvprintw(12 , COLS - 16 , "Gold:   %d" , player.gold);
     mvprintw(13 , COLS - 16 , "Hits:   %d" , player.hit);
     mvprintw(14 , COLS - 16 , "Floor:  %d" , player.floor);
-    mvprintw(16 , COLS - 16 , "Press \"i\" for");
-    mvprintw(17 , COLS - 16 , "weapon list");
-    mvprintw(19 , COLS - 16 , "Press \"j\" for");
-    mvprintw(20 , COLS - 16 , "spell list");
+    mvprintw(15 , COLS - 16 , "full:");
+    mvprintw(15 , COLS - 10 , "[");
+    for (int i = 0; i < player.Mfullness; i++)
+    {
+        if (i < player.fullness)
+        {
+            mvprintw(15 , COLS - 9 + i , "#");
+        }else
+        {
+            mvprintw(15 , COLS - 9 + i , ".");
+        }
+    }
+    mvprintw(15 , COLS - 9 + player.fullness , "]" );
+    mvprintw(26 , COLS - 16 , "Press \"i\" for");
+    mvprintw(27 , COLS - 16 , "weapon list");
+    mvprintw(29 , COLS - 16 , "Press \"j\" for");
+    mvprintw(30 , COLS - 16 , "spell list");
 }
 
 void add_gold(room_info room){
@@ -1568,6 +1593,35 @@ void add_gold(room_info room){
     }
 }
 
+void add_trap(room_info room){
+    int count = randomint(0 , 100 * diff_level);
+    if(count > 65){
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        w[xx][yy].what = 8;
+        if(count > 90){
+            int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+            int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+            w[xx][yy].what = 8;
+            if(count > 150){
+                int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+                int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+                w[xx][yy].what = 8;
+                if(count > 230){
+                    int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+                    int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+                    w[xx][yy].what = 8;
+                    if(count > 250){
+                        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+                        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+                        w[xx][yy].what = 8;
+                    }
+                }
+            }
+        }
+    }
+}
+
 void setcolors(){
     init_pair(1, COLOR_RED, COLOR_BLACK); 
     init_pair(2, COLOR_GREEN, COLOR_BLACK); 
@@ -1585,6 +1639,7 @@ void setcolors(){
     init_pair(14 , 0 , 226);
     init_pair(15 , 204 , 0);
     init_pair(16 , 220 , 0);
+    init_pair(17 , 128 , 0);
       
 }
 
@@ -1673,8 +1728,21 @@ void w_draw(){
                 break;
 
             case 8:
-                mvprintw(i , j , "⌀");
+                if (w[i][j].vision == 2)
+                {
+                    attron(COLOR_PAIR(17));
+                    mvprintw(i , j , "⋀");
+                    attroff(COLOR_PAIR(17));
+                }else
+                {
+                    attron(COLOR_PAIR(11));
+                    mvprintw(i , j , ".");
+                    attroff(COLOR_PAIR(11));      
+                }
+                
+                
                 break;
+            
 
             case 20:
                 mvprintw(i , j , "◒");
@@ -1754,6 +1822,20 @@ void w_draw(){
                 attroff(COLOR_PAIR(11));
                 break;
 
+            case 1008:
+                if (w[i][j].vision == 2)
+                {
+                    attron(COLOR_PAIR(17));
+                    mvprintw(i , j , "⋀");
+                    attroff(COLOR_PAIR(17));
+                }else
+                {
+                    attron(COLOR_PAIR(15));
+                    mvprintw(i , j , ".");
+                    attroff(COLOR_PAIR(15));      
+                }
+                break; 
+
             default:
                 break;
             }
@@ -1809,6 +1891,11 @@ void treasure_room(room_info room){
             {
                 w[i][j].what += 1000;
             }
+            else if (w[i][j].what == 8)
+            {
+                w[i][j].what += 1000;
+            }
+            
             
             
         }
@@ -1818,6 +1905,15 @@ void treasure_room(room_info room){
     
 }
 
-
+void check_trap(){
+    if (w[player.position.x][player.position.y].what == 8 || w[player.position.x][player.position.y].what == 1008)
+    {
+        player.hit -= 5;
+        player.hit -= 3* diff_level;
+        if(w[player.position.x][player.position.y].vision <= 2){
+            w[player.position.x][player.position.y].vision = 2;
+        }
+    }
+}
 
 
