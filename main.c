@@ -88,7 +88,8 @@ typedef struct{
     int exist;
     char type;
     int health;
-    int movement;
+    int movement_left;
+    int ammo_left;
     pos position;
 
 }enemy_info;
@@ -158,6 +159,18 @@ enemy_info enemy[100];
     void treasure_room(room_info room); // make a room treasure room
     void victory_page(); // goes to victory page
     void check_trap(); // check if there is a trap or not
+    int check_live(int x , int y , int who); // check if there is enemy or player in that pos ,,, 0 for both ,,, 1 for enemy ,,, 2 for player
+
+    //functions for enemies
+    void put_enemy();
+    void reset_enemy();
+    void print_enemy();
+    void move_enemy();
+    int num_D;
+    int num_F;
+    int num_G;
+    int num_S;
+    int num_U;
 
 int main(){
     setlocale(LC_ALL, "");
@@ -1022,6 +1035,7 @@ void new_game(user_info u){
     clear();
     room_reset();
     w_reset();
+    reset_enemy();
     noecho();
     curs_set(FALSE);
 
@@ -1033,6 +1047,7 @@ void new_game(user_info u){
     build_map();
     put_player();
     put_stairs();
+    put_enemy();
     handle_movement();    
 }
 
@@ -1192,7 +1207,7 @@ void add_pillar(room_info room){
 
 int obstacle_check(int x , int y){
     if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0
-    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004){
+    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004 || check_live(x , y , 0)){
         return 1;
     }else{
         return 0;
@@ -1339,6 +1354,7 @@ void new_floor(){
     clear();
     room_reset();
     w_reset();
+    reset_enemy();
     noecho();
     curs_set(FALSE);
     while(w[player.position.x][player.position.y].what != 1){
@@ -1347,6 +1363,7 @@ void new_floor(){
         build_map();
     }
     put_stairs();
+    put_enemy();
     refresh();
     handle_movement();
 }
@@ -1359,6 +1376,7 @@ void handle_movement(){
         print_info();
         w_draw();
         mvaddch(player.position.x , player.position.y , '@');
+        print_enemy();
         refresh();
         int ch = getch();
         if(ch == 27){closeall(0);}
@@ -1924,4 +1942,353 @@ void check_trap(){
     }
 }
 
+int check_live(int x , int y , int who){
+    if ((player.position.x == x) && (player.position.y == y) && (who != 1))
+    {
+        return 1;
+    }
+    if (who != 2)
+    {
+        for (int i = 0; i < 50; i++)
+        {
+            if (enemy[i].exist == 1)
+            {
+                if((enemy[i].position.x == x) && (enemy[i].position.y == y) ){
+                    return 1;
+                }
+            }
+            
+        }
+        
+    }
+    
 
+    return 0;
+    
+    
+}
+
+void reset_enemy(){
+    num_D = 0;
+    num_F = 0;
+    num_G = 0;
+    num_S = 0;
+    num_U = 0;
+    num_of_enemies = 0;
+
+    for (int i = 0; i < 100; i++)
+    {
+        enemy[i].ammo_left = 0;
+        enemy[i].exist = 0;
+        enemy[i].health = 0;
+        enemy[i].movement_left = 0;
+        enemy[i].position.x = 0;
+        enemy[i].position.y = 0;
+        enemy[i].type = ' ';
+        
+    }
+    
+}
+
+void put_enemy(){
+    for (int ii = 0; ii < 4; ii++)
+    {
+        for (int jj = 0; jj < 2; jj++)
+        {
+            if (room[10*jj + ii].E == 1)
+            {
+                int done1 = 1;
+
+                while(done1){
+                    int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
+                    int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
+                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                        enemy[num_of_enemies].exist = 1;
+                        while (done1)
+                        {
+                            int who = randomint(0,5);
+                            switch (who)
+                            {
+                            case 0:
+                                if (num_D < 10)
+                                {
+                                    enemy[num_of_enemies].type = 'D';
+                                    enemy[num_of_enemies].health = 5;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_D++;
+                                    num_of_enemies++;
+                                    done1 = 0;
+                                }
+                                break;
+                            case 1:
+                                if (num_F < 5)
+                                {
+                                    enemy[num_of_enemies].type = 'F';
+                                    enemy[num_of_enemies].health = 10;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_F++;
+                                    num_of_enemies++;
+                                    done1 = 0;
+                                }
+                                
+                                break;
+
+                            case 2:
+                                if (num_G < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'G';
+                                    enemy[num_of_enemies].health = 15;
+                                    enemy[num_of_enemies].movement_left = 5;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_of_enemies++;
+                                    num_G++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 3:
+                                if (num_S < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'S';
+                                    enemy[num_of_enemies].health = 20;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_G++;
+                                    num_of_enemies++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 4:
+                                if (num_U < 2)
+                                {
+                                    enemy[num_of_enemies].type = 'U';
+                                    enemy[num_of_enemies].health = 30;
+                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_S++;
+                                    num_of_enemies++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            default:
+                                break;
+                            }                        
+                        }
+                        
+                    }
+                }
+
+                if (diff_level == 3 && (randomint(0,5)==4))
+                {
+                       
+                while(done1){
+                    int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
+                    int yy = randomint(room[10*jj + ii].up_left.y +1 , room[10*jj + ii].bottom_right.y );
+                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                        enemy[num_of_enemies].exist = 1;
+                        while (done1)
+                        {
+                            int who = randomint(0,5);
+                            switch (who)
+                            {
+                            case 0:
+                                if (num_D < 5)
+                                {
+                                    enemy[num_of_enemies].type = 'D';
+                                    enemy[num_of_enemies].health = 5;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_D++;
+                                    done1 = 0;
+                                }
+                                break;
+                            case 1:
+                                if (num_F < 5)
+                                {
+                                    enemy[num_of_enemies].type = 'F';
+                                    enemy[num_of_enemies].health = 10;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_F++;
+                                    done1 = 0;
+                                }
+                                
+                                break;
+
+                            case 2:
+                                if (num_G < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'G';
+                                    enemy[num_of_enemies].health = 15;
+                                    enemy[num_of_enemies].movement_left = 5;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_G++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 3:
+                                if (num_S < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'S';
+                                    enemy[num_of_enemies].health = 20;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_S++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 4:
+                                if (num_U < 2)
+                                {
+                                    enemy[num_of_enemies].type = 'U';
+                                    enemy[num_of_enemies].health = 30;
+                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_U++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            default:
+                                break;
+                            }                        
+                        }
+                        
+                    }
+                }
+
+                }
+
+                if (diff_level == 2 && randomint(0,2))
+                {
+                       
+                while(done1){
+                    int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
+                    int yy = randomint(room[10*jj + ii].up_left.y +1 , room[10*jj + ii].bottom_right.y );
+                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                        enemy[num_of_enemies].exist = 1;
+                        while (done1)
+                        {
+                            int who = randomint(0,5);
+                            switch (who)
+                            {
+                            case 0:
+                                if (num_D < 5)
+                                {
+                                    enemy[num_of_enemies].type = 'D';
+                                    enemy[num_of_enemies].health = 5;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_D++;
+                                    done1 = 0;
+                                }
+                                break;
+                            case 1:
+                                if (num_F < 5)
+                                {
+                                    enemy[num_of_enemies].type = 'F';
+                                    enemy[num_of_enemies].health = 10;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_F++;
+                                    done1 = 0;
+                                }
+                                
+                                break;
+
+                            case 2:
+                                if (num_G < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'G';
+                                    enemy[num_of_enemies].health = 15;
+                                    enemy[num_of_enemies].movement_left = 5;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_G++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 3:
+                                if (num_S < 3)
+                                {
+                                    enemy[num_of_enemies].type = 'S';
+                                    enemy[num_of_enemies].health = 20;
+                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_G++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            case 4:
+                                if (num_U < 2)
+                                {
+                                    enemy[num_of_enemies].type = 'U';
+                                    enemy[num_of_enemies].health = 30;
+                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].position.x = xx;
+                                    enemy[num_of_enemies].position.y = yy;
+                                    num_S++;
+                                    done1 = 0;
+                                }
+                                break;
+
+                            default:
+                                break;
+                            }                        
+                        }
+                        
+                    }
+                }
+
+                }
+                
+                
+            
+            }
+            
+        }
+        
+    }
+    
+}
+
+void print_enemy(){
+    for (int i = 0; i < 50; i++)
+    {
+        if (enemy[i].exist == 1 && enemy[i].health >= 1 )
+        {
+            mvaddch(enemy[i].position.x , enemy[i].position.y , enemy[i].type);
+        }
+        
+    }
+    
+}
+
+void move_enemy(){
+    for (int i = 0; i < 50; i++)
+    {
+        /* code */
+    }
+    
+}
