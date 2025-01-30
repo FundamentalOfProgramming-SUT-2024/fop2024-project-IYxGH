@@ -84,9 +84,17 @@ typedef struct{
     int what;
 }wpos;
 
+typedef struct{
+    int exist;
+    char type;
+    int health;
+    int movement;
+    pos position;
+
+}enemy_info;
 
 
-wpos w[35][130];
+wpos w[35][200];
 user_info u;
 user_info users[1000];
 room_info room[100];
@@ -97,6 +105,8 @@ int hero_color;
 int music;
 char last_pos[3];
 int num_of_users;
+int num_of_enemies;
+enemy_info enemy[100];
 
 
 // functions    
@@ -1210,21 +1220,21 @@ void build_map(){
             a.x = 1 + 19*j;
             b.x = 15 + 19*j;
             if (i==0){
-                a.y = 3;
-                b.y = 26;
+                a.y = COLS - 114;
+                b.y = COLS - 91;
             }
             else if (i==1)
             {
-                a.y = 34;
-                b.y = 56;
+                a.y = COLS - 84;
+                b.y = COLS - 62;
             }
             else if(i==2){
-                a.y = 64;
-                b.y = 86;
+                a.y = COLS - 55;
+                b.y = COLS - 32;
             }
             else if(i==3){
-                a.y = 94;
-                b.y = 116;
+                a.y = COLS - 25;
+                b.y = COLS - 2;
             }
             room_generator(a , b);
             room[10*j + i] = s;
@@ -1524,51 +1534,49 @@ void pick_item(int x , int y){
 }
 
 void print_info(){
-    mvprintw(1 , COLS - 14 , "---%s---" , u.name);
+    mvprintw(1 , 3 , "---%s---" , u.name);
     for (int i = 0; i < LINES; i++)
     {
-        mvaddch(i , COLS-18 , '|');
+        mvaddch(i , 20 , '|');
     }
-    for(int i = 0 ; i < 17 ; i ++){
-        mvprintw(2 , COLS - i , "■");  //⇔▬▲▼■
-        mvprintw(9 , COLS - i , "■");
+    for(int i = 0 ; i < 20 ; i ++){
+        mvprintw(2 ,  i , "■");  //⇔▬▲▼■
+        mvprintw(9 ,  i , "■");
     }
     switch (diff_level)
     {
         case 1:
-            mvprintw(11 , COLS - 16 , "Difficulty: Easy");
+            mvprintw(11 , 0 , "Difficulty: Easy");
             break;
         
         case 2:
-            mvprintw(11 , COLS - 16 , "Difficulty: Medium");
+            mvprintw(11 , 0 , "Difficulty: Medium");
             break;
 
         case 3:
-            mvprintw(11 , COLS - 16 , "Difficulty: Hard");
+            mvprintw(11 , 0 , "Difficulty: Hard");
             break;
         default:
             break;
     }
-    mvprintw(12 , COLS - 16 , "Gold:   %d" , player.gold);
-    mvprintw(13 , COLS - 16 , "Hits:   %d" , player.hit);
-    mvprintw(14 , COLS - 16 , "Floor:  %d" , player.floor);
-    mvprintw(15 , COLS - 16 , "full:");
-    mvprintw(15 , COLS - 10 , "[");
+    mvprintw(12 , 0 , "Gold:   %d" , player.gold);
+    mvprintw(13 , 0 , "Hits:   %d" , player.hit);
+    mvprintw(14 , 0 , "Floor:  %d" , player.floor);
+    mvprintw(15 , 0 , "fullness:");
+    mvprintw(15 , 9 , "[");
     for (int i = 0; i < player.Mfullness; i++)
     {
         if (i < player.fullness)
         {
-            mvprintw(15 , COLS - 9 + i , "#");
+            mvprintw(15 ,  i + 10 , "#");
         }else
         {
-            mvprintw(15 , COLS - 9 + i , ".");
+            mvprintw(15 ,  i + 10 , ".");
         }
     }
-    mvprintw(15 , COLS - 9 + player.fullness , "]" );
-    mvprintw(26 , COLS - 16 , "Press \"i\" for");
-    mvprintw(27 , COLS - 16 , "weapon list");
-    mvprintw(29 , COLS - 16 , "Press \"j\" for");
-    mvprintw(30 , COLS - 16 , "spell list");
+    mvprintw(15 ,  player.fullness + 10 , "]" );
+    mvprintw(25 , 0 , "\"i\" -> weapon list");
+    mvprintw(27 , 0 , "\"j\" -> spell list");
 }
 
 void add_gold(room_info room){
@@ -1672,7 +1680,7 @@ void spell_list(){
 void w_reset(){
     for (int i = 0; i < 35; i++)
     {
-        for (int j = 0; j < 130; j++)
+        for (int j = 0; j < COLS; j++)
         {
             w[i][j].what = 0;
             w[i][j].vision = 0;
@@ -1685,7 +1693,7 @@ void w_reset(){
 void w_draw(){
     for (int i = 0; i < 35; i++)
     {
-        for (int j = 0; j < 130; j++)
+        for (int j = 0; j < COLS; j++)
         {
             switch (w[i][j].what)
             {
