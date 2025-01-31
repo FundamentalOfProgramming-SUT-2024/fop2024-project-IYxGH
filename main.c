@@ -1748,40 +1748,40 @@ void weapon_list(){
     clear();
     board();
     attron(A_BOLD);
-    mvprintw(4 , COLS/2 - 12 , "Close range weapons:");
-    mvprintw(6 , COLS/2 - 10 , "Mace:        %d  ⚒  (Press \'m\' to pick)" , player.weapon[0]);
-    mvprintw(8 , COLS/2 - 10, "Sword:       %d  ⚔  (Press \'s\' to pick)" , player.weapon[4]);
-    mvprintw(11 , COLS/2 - 12, "Far range weapons:");
-    mvprintw(13 , COLS/2 - 10 , "Dagger:      %d  🗡  (Press \'d\' to pick)" , player.weapon[1]);
-    mvprintw(15 , COLS/2 - 10 , "Magic Wand:  %d  ⁋  (Press \'w\' to pick)" , player.weapon[2]);
-    mvprintw(17 , COLS/2 - 10, "Arrow:       %d  ➳  (Press \'a\' to pick)" , player.weapon[3]);
+    mvprintw(4 , COLS/2 - 18 , "Close range weapons:\t\t\tDamage\tRange");
+    mvprintw(6 , COLS/2 - 16 , "Mace:        %d  ⚒  (Press \'m\' to pick)\t  5\tclose" , player.weapon[0]);
+    mvprintw(8 , COLS/2 - 16, "Sword:       %d  ⚔  (Press \'s\' to pick)\t  5\tclose" , player.weapon[4]);
+    mvprintw(11 , COLS/2 - 18, "Far range weapons:");
+    mvprintw(13 , COLS/2 - 16 , "Dagger:      %d  🗡  (Press \'d\' to pick)\t  12\t  5" , player.weapon[1]);
+    mvprintw(15 , COLS/2 - 16 , "Magic Wand:  %d  ⁋  (Press \'w\' to pick)\t  15\t  10" , player.weapon[2]);
+    mvprintw(17 , COLS/2 - 16, "Arrow:       %d  ➳  (Press \'a\' to pick)\t  5\t  5" , player.weapon[3]);
     switch (player.now_weapon)
     {
     case 0:
-        mvprintw(6 , COLS/2 - 16 , "-->");
+        mvprintw(6 , COLS/2 - 22 , "-->");
         break;
         
     case 4:
-        mvprintw(8 , COLS/2 - 16 , "-->");
+        mvprintw(8 , COLS/2 - 22 , "-->");
         break;
         
     case 1:
-        mvprintw(13 , COLS/2 - 16 , "-->");
+        mvprintw(13 , COLS/2 - 22 , "-->");
         break;
         
     case 2:
-        mvprintw(15 , COLS/2 - 16 , "-->");
+        mvprintw(15 , COLS/2 - 22 , "-->");
         break;
         
     case 3:
-        mvprintw(17 , COLS/2 - 16 , "-->");
+        mvprintw(17 , COLS/2 - 22 , "-->");
         break;
     
     default:
         break;
     }
     attroff(A_BOLD);
-    mvprintw(20 , COLS/2 - 10 , "press \'i\' to continue...");
+    mvprintw(20 , COLS/2 - 16 , "press \'i\' to continue...");
     int ch = getch();
     
     
