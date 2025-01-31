@@ -37,7 +37,7 @@ typedef struct{
     int Mfullness;
     int weapon[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
     int now_weapon;
-    int last_shot;
+    char last_shot; 
     int spell[3];  // 0 for health, 1 for speed , 2 for damage
 }player_info;
 
@@ -167,7 +167,7 @@ int message_show[100];
     void check_trap(); // check if there is a trap or not
     int check_live(int x , int y , int who); // check if there is enemy or player in that pos ,,, 0 for both ,,, 1 for enemy ,,, 2 for player
     int check_room_pos(int x , int y); // give the room number of pos ,,, give -1 if its in no room
-    void attack(); // to use weapons, and give damage to enemy
+    void attack(int a); // to use weapons, and give damage to enemy
     void init_messages(); // to init messages 
 
     //functions for enemies
@@ -1059,10 +1059,11 @@ void new_game(user_info u){
     player.Mhit = (8 - diff_level) * 20;
     player.hit = (8 - diff_level) * 20;
     player.weapon[0] = 1;
-    player.weapon[1] = 10;
+    player.weapon[1] = 0;
     player.weapon[2] = 0;
     player.weapon[3] = 0;
     player.weapon[4] = 0;
+    player.last_shot = '0';
     player.now_weapon = 0;
     build_map();
     put_player();
@@ -1496,12 +1497,18 @@ void handle_movement(){
             break;
 
         case ' ':
-            if (w[player.position.x][player.position.y].what != 5)
+            if (w[player.position.x][player.position.y].what != 6)
             {
-                attack();
+                attack(0);
             }
             
             break;
+
+        case 'v':
+            if (w[player.position.x][player.position.y].what != 6 && player.last_shot != '0')
+            {
+                attack(1);
+            }
 
         default:
             break;
@@ -2291,10 +2298,10 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'S';
                                     enemy[num_of_enemies].health = 20;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 999;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
-                                    num_G++;
+                                    num_S++;
                                     num_of_enemies++;
                                     done1 = 0;
                                 }
@@ -2322,12 +2329,13 @@ void put_enemy(){
                     }
                 }
 
-                if (diff_level == 3 && (randomint(0,5)==4))
+                if (diff_level == 3)
                 {
-                       
+                    done1 = 1;
+                
                 while(done1){
                     int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
-                    int yy = randomint(room[10*jj + ii].up_left.y +1 , room[10*jj + ii].bottom_right.y );
+                    int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
                     if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
                         enemy[num_of_enemies].exist = 1;
                         while (done1)
@@ -2336,14 +2344,15 @@ void put_enemy(){
                             switch (who)
                             {
                             case 0:
-                                if (num_D < 5)
+                                if (num_D < 10)
                                 {
                                     enemy[num_of_enemies].type = 'D';
                                     enemy[num_of_enemies].health = 5;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_D++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2352,10 +2361,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'F';
                                     enemy[num_of_enemies].health = 10;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_F++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 
@@ -2369,6 +2379,7 @@ void put_enemy(){
                                     enemy[num_of_enemies].movement_left = 5;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
+                                    num_of_enemies++;
                                     num_G++;
                                     done1 = 0;
                                 }
@@ -2379,10 +2390,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'S';
                                     enemy[num_of_enemies].health = 20;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 999;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_S++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2392,10 +2404,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'U';
                                     enemy[num_of_enemies].health = 30;
-                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].movement_left = -1;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
-                                    num_U++;
+                                    num_S++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2412,10 +2425,11 @@ void put_enemy(){
 
                 if (diff_level == 2 && randomint(0,2))
                 {
-                       
+                 done1 = 1;      
+                                
                 while(done1){
                     int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
-                    int yy = randomint(room[10*jj + ii].up_left.y +1 , room[10*jj + ii].bottom_right.y );
+                    int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
                     if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
                         enemy[num_of_enemies].exist = 1;
                         while (done1)
@@ -2424,14 +2438,15 @@ void put_enemy(){
                             switch (who)
                             {
                             case 0:
-                                if (num_D < 5)
+                                if (num_D < 10)
                                 {
                                     enemy[num_of_enemies].type = 'D';
                                     enemy[num_of_enemies].health = 5;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_D++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2440,10 +2455,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'F';
                                     enemy[num_of_enemies].health = 10;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_F++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 
@@ -2457,6 +2473,7 @@ void put_enemy(){
                                     enemy[num_of_enemies].movement_left = 5;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
+                                    num_of_enemies++;
                                     num_G++;
                                     done1 = 0;
                                 }
@@ -2467,10 +2484,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'S';
                                     enemy[num_of_enemies].health = 20;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 999;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
-                                    num_G++;
+                                    num_S++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2480,10 +2498,11 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'U';
                                     enemy[num_of_enemies].health = 30;
-                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].movement_left = -1;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_S++;
+                                    num_of_enemies++;
                                     done1 = 0;
                                 }
                                 break;
@@ -2533,7 +2552,7 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 3;
-                break;
+                continue;;
             }
             }
             
@@ -2632,7 +2651,7 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 2)) && (player.position.y <= (enemy[i].position.y + 2)))
             {
                 player.hit -= 4;
-                break;
+                continue;;
             }
             }
 
@@ -2718,7 +2737,7 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 15;
-                break;
+                continue;
             }
             }
 
@@ -2818,11 +2837,13 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 7;
-                break;
+                continue;
             }
             }
             
             //move
+            if (enemy[i].movement_left > 0)
+            {
             if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
             {
                 if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
@@ -2897,7 +2918,7 @@ void move_enemy(){
                     enemy[i].position.y--;
                 }
             }
-
+            }
         }
         else if (enemy[i].type == 'U')
         {
@@ -2912,7 +2933,7 @@ void move_enemy(){
                     enemy[i].movement_left = 5;
                 }
                 
-                break;
+                continue;
             }
             }
             
@@ -3015,7 +3036,7 @@ void move_enemy(){
     
 }
 
-void attack(){
+void attack(int a){
     if (player.now_weapon == -1)
     {
         
@@ -3035,7 +3056,7 @@ void attack(){
             }
             
         }
-        
+        player.last_shot = 'x';
     }
     else if (player.now_weapon == 4)
     {
@@ -3059,17 +3080,33 @@ void attack(){
         {
             message_show[1] = 1;
         }
-        
+        player.last_shot = 'x';
         
     }
     else if (player.now_weapon == 1)
     {
         if (player.weapon[1])
         {
+            int ch;
             player.weapon[1]--;
-            int ch = getch();
+            if (a == 0)
+            {
+                ch = getch();
+                
+            }else
+            {
+                if (player.last_shot == 'x')
+                {
+                    return;
+                }
+                
+                ch = player.last_shot;
+            }
+            
+            
                 int k = 0;
                 int ddone = 0;
+            player.last_shot = ch;
             switch (ch)
             {
             case 'w':
@@ -3105,6 +3142,11 @@ void attack(){
                 }
                 if (ddone == 0)
                 {
+                    if (k == 6)
+                    {
+                        k--;
+                    }
+                    
                     w[player.position.x - k][player.position.y].what = 102;
                     w[player.position.x - k][player.position.y].amount = 1;
                 }
@@ -3143,6 +3185,11 @@ void attack(){
                 }
                 if (ddone == 0)
                 {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
                     w[player.position.x + k][player.position.y].what = 102;
                     w[player.position.x + k][player.position.y].amount = 1;
                 }
@@ -3180,6 +3227,11 @@ void attack(){
                 }
                 if (ddone == 0)
                 {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
                 w[player.position.x][player.position.y + k].what = 102;
                 w[player.position.x][player.position.y + k].amount = 1;
                     
@@ -3219,7 +3271,434 @@ void attack(){
                 }
                 if (ddone == 0)
                 {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
                 w[player.position.x][player.position.y - k].what = 102;
+                w[player.position.x][player.position.y - k].amount = 1;
+                    
+                }
+                
+                break;    
+            
+            default:
+                break;
+            }
+            
+        }
+        else
+        {
+            message_show[1] = 1;
+        }
+    }
+    else if (player.now_weapon == 3)
+    {
+        if (player.weapon[3])
+        {
+            player.weapon[3]--;
+            int ch;
+            if (a == 0)
+            {
+                ch = getch();
+                
+            }else
+            {
+                if (player.last_shot == 'x')
+                {
+                    return;
+                }
+                
+                ch = player.last_shot;
+            }
+                int k = 0;
+                int ddone = 0;
+            player.last_shot = ch;
+            
+            switch (ch)
+            {
+            case 'w':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x - k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 5;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        break;
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    
+                    if(obstacle_check(player.position.x - k , player.position.y) || w[player.position.x - k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
+                    w[player.position.x - k][player.position.y].what = 104;
+                    w[player.position.x - k][player.position.y].amount = 1;
+                }
+                
+                break;
+            
+            case 's':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x + k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 5;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x + k , player.position.y) || w[player.position.x + k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
+                    w[player.position.x + k][player.position.y].what = 104;
+                    w[player.position.x + k][player.position.y].amount = 1;
+                }
+                break;
+
+            case 'd':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x , player.position.y + k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
+                            {
+                                enemy[i].health -= 5;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , (player.position.y + k)) || w[player.position.x][player.position.y + k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
+                w[player.position.x][player.position.y + k].what = 104;
+                w[player.position.x][player.position.y + k].amount = 1;
+                    
+                }
+                
+                break;
+
+            case 'a':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x , player.position.y - k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
+                            {
+                                enemy[i].health -= 5;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , player.position.y - k) || w[player.position.x][player.position.y - k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 6)
+                    {
+                        k--;
+                    }
+                w[player.position.x][player.position.y - k].what = 104;
+                w[player.position.x][player.position.y - k].amount = 1;
+                    
+                }
+                
+                break;    
+            
+            default:
+                break;
+            }
+            
+        }
+        else
+        {
+            message_show[1] = 1;
+        }
+    }
+    else if (player.now_weapon == 2)
+    {
+        if (player.weapon[2])
+        {
+            player.weapon[2]--;
+            int ch;
+            if (a == 0)
+            {
+                ch = getch();
+                
+            }else
+            {
+                if (player.last_shot == 'x')
+                {
+                    return;
+                }
+                
+                ch = player.last_shot;
+            }
+                int k = 0;
+                int ddone = 0;
+            player.last_shot = ch;
+
+            switch (ch)
+            {
+            case 'w':
+                for (k = 1; k <= 10; k++)
+                {
+                    if (check_live(player.position.x - k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 15;
+                                enemy[i].movement_left = 0;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        break;
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    
+                    if(obstacle_check(player.position.x - k , player.position.y) || w[player.position.x - k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 11)
+                    {
+                        k--;
+                    }
+                    w[player.position.x - k][player.position.y].what = 103;
+                    w[player.position.x - k][player.position.y].amount = 1;
+                }
+                
+                break;
+            
+            case 's':
+                for (k = 1; k <= 10; k++)
+                {
+                    if (check_live(player.position.x + k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 15;
+                                enemy[i].movement_left = 0;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x + k , player.position.y) || w[player.position.x + k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 11)
+                    {
+                        k--;
+                    }
+                    w[player.position.x + k][player.position.y].what = 103;
+                    w[player.position.x + k][player.position.y].amount = 1;
+                }
+                break;
+
+            case 'd':
+                for (k = 1; k <= 10; k++)
+                {
+                    if (check_live(player.position.x , player.position.y + k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
+                            {
+                                enemy[i].health -= 15;
+                                enemy[i].movement_left = 0;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , (player.position.y + k)) || w[player.position.x][player.position.y + k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 11)
+                    {
+                        k--;
+                    }
+                w[player.position.x][player.position.y + k].what = 103;
+                w[player.position.x][player.position.y + k].amount = 1;
+                    
+                }
+                
+                break;
+
+            case 'a':
+                for (k = 1; k <= 10; k++)
+                {
+                    if (check_live(player.position.x , player.position.y - k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
+                            {
+                                enemy[i].health -= 15;
+                                enemy[i].movement_left = 0;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , player.position.y - k) || w[player.position.x][player.position.y - k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    
+                    if (k == 11)
+                    {
+                        k--;
+                    }
+                w[player.position.x][player.position.y - k].what = 103;
                 w[player.position.x][player.position.y - k].amount = 1;
                     
                 }
