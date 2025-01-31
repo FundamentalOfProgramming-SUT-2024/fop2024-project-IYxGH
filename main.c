@@ -111,6 +111,9 @@ char last_pos[3];
 int num_of_users;
 int num_of_enemies;
 enemy_info enemy[100];
+char messages[100][100];
+int message_show[100];
+
 
 
 // functions    
@@ -164,7 +167,8 @@ enemy_info enemy[100];
     void check_trap(); // check if there is a trap or not
     int check_live(int x , int y , int who); // check if there is enemy or player in that pos ,,, 0 for both ,,, 1 for enemy ,,, 2 for player
     int check_room_pos(int x , int y); // give the room number of pos ,,, give -1 if its in no room
-
+    void attack(); // to use weapons, and give damage to enemy
+    void init_messages(); // to init messages 
 
     //functions for enemies
     void put_enemy();
@@ -282,6 +286,11 @@ void room_reset(){
 void closeall(){
     endwin();
     exit(0);
+}
+
+void init_messages(){
+    strcpy(messages[0] , "ENEMY hit you!");
+    strcpy(messages[1] , "You dont have weapon!");
 }
 
 void new_user_page(user_info *u)
@@ -1050,6 +1059,10 @@ void new_game(user_info u){
     player.Mhit = (8 - diff_level) * 20;
     player.hit = (8 - diff_level) * 20;
     player.weapon[0] = 1;
+    player.weapon[1] = 10;
+    player.weapon[2] = 0;
+    player.weapon[3] = 0;
+    player.weapon[4] = 0;
     player.now_weapon = 0;
     build_map();
     put_player();
@@ -1478,6 +1491,18 @@ void handle_movement(){
             spell_list();
             break;
 
+        case 'o':
+            player.now_weapon = -1;
+            break;
+
+        case ' ':
+            if (w[player.position.x][player.position.y].what != 5)
+            {
+                attack();
+            }
+            
+            break;
+
         default:
             break;
         }
@@ -1554,22 +1579,26 @@ void pick_item(int x , int y){
     else if (w[x][y].what == 102)
     {
         w[x][y].what = 1;
-        player.weapon[1] += 1; 
+        player.weapon[1] += w[x][y].amount; 
+        w[x][y].amount = 0;
     }
     else if (w[x][y].what == 103)
     {
         w[x][y].what = 1;
-        player.weapon[2] += 1; 
+        player.weapon[2] += w[x][y].amount; 
+        w[x][y].amount = 0; 
     }
     else if (w[x][y].what == 104)
     {
         w[x][y].what = 1;
-        player.weapon[3] += 1; 
+        player.weapon[3] += w[x][y].amount; 
+        w[x][y].amount = 0; 
     }
     else if (w[x][y].what == 105)
     {
         w[x][y].what = 1;
-        player.weapon[4] += 1; 
+        player.weapon[4] += w[x][y].amount; 
+        w[x][y].amount = 0; 
     }
     else if (w[x][y].what == 201)
     {
@@ -1712,14 +1741,154 @@ void weapon_list(){
     clear();
     board();
     attron(A_BOLD);
-    mvprintw(4 , COLS/2 - 10 , "Mace:        %d  ⚒" , player.weapon[0]);
-    mvprintw(6 , COLS/2 - 10 , "Dagger:      %d  🗡" , player.weapon[1]);
-    mvprintw(8 , COLS/2 - 10 , "Majic Wand:  %d  ⁋" , player.weapon[2]);
-    mvprintw(10 , COLS/2 - 10, "Arrow:       %d  ➳" , player.weapon[3]);
-    mvprintw(12 , COLS/2 - 10, "Sword:       %d  ⚔" , player.weapon[4]);
+    mvprintw(4 , COLS/2 - 12 , "Close range weapons:");
+    mvprintw(6 , COLS/2 - 10 , "Mace:        %d  ⚒  (Press \'m\' to pick)" , player.weapon[0]);
+    mvprintw(8 , COLS/2 - 10, "Sword:       %d  ⚔  (Press \'s\' to pick)" , player.weapon[4]);
+    mvprintw(11 , COLS/2 - 12, "Far range weapons:");
+    mvprintw(13 , COLS/2 - 10 , "Dagger:      %d  🗡  (Press \'d\' to pick)" , player.weapon[1]);
+    mvprintw(15 , COLS/2 - 10 , "Magic Wand:  %d  ⁋  (Press \'w\' to pick)" , player.weapon[2]);
+    mvprintw(17 , COLS/2 - 10, "Arrow:       %d  ➳  (Press \'a\' to pick)" , player.weapon[3]);
+    switch (player.now_weapon)
+    {
+    case 0:
+        mvprintw(6 , COLS/2 - 16 , "-->");
+        break;
+        
+    case 4:
+        mvprintw(8 , COLS/2 - 16 , "-->");
+        break;
+        
+    case 1:
+        mvprintw(13 , COLS/2 - 16 , "-->");
+        break;
+        
+    case 2:
+        mvprintw(15 , COLS/2 - 16 , "-->");
+        break;
+        
+    case 3:
+        mvprintw(17 , COLS/2 - 16 , "-->");
+        break;
+    
+    default:
+        break;
+    }
     attroff(A_BOLD);
-    mvprintw(16 , COLS/2 - 10 , "press any key to continue...");
-    getch();
+    mvprintw(20 , COLS/2 - 10 , "press \'i\' to continue...");
+    int ch = getch();
+    
+    
+        
+    
+        switch (ch)
+        {
+        case 'm':
+            if (player.now_weapon == -1){
+                player.now_weapon = 0;
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            else
+            {
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            
+            break;
+            
+        case 's':
+            if (player.now_weapon == -1){
+                player.now_weapon = 4;
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            else
+            {
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            break;
+            
+        case 'd':
+            if (player.now_weapon == -1){
+                player.now_weapon = 1;
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            else
+            {
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            
+            break;
+            
+        case 'w':
+            if (player.now_weapon == -1){
+                player.now_weapon = 2;
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            else
+            {
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            
+            break;
+            
+        case 'a':
+            if (player.now_weapon == -1){
+                player.now_weapon = 3;
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            else
+            {
+                clear();
+                board();
+                mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
+                getch();
+            }
+            break;
+            
+        case 'i':
+            break;
+        
+        default:
+            weapon_list();
+            break;
+        }
+    
+    
 }
 
 void spell_list(){
@@ -1741,6 +1910,7 @@ void w_reset(){
         {
             w[i][j].what = 0;
             w[i][j].vision = 0;
+            w[i][j].amount = 0;
         }
         
     }
@@ -1925,6 +2095,27 @@ void put_spellandweapon(){
             int yy = randomint(20, 132);
             if(w[xx][yy].what == 1){
                 w[xx][yy].what = 101 + wwp;
+                switch (wwp)
+                {
+                case 1:
+                    w[xx][yy].amount = 10;
+                    break;
+
+                case 2:
+                    w[xx][yy].amount = 8;
+                    break;
+
+                case 3:
+                    w[xx][yy].amount = 20;
+                    break;
+
+                case 4:
+                    w[xx][yy].amount = 1;
+                    break;
+
+                default:
+                    break;
+                }
                 done = 1;
                 wp -= 1;
             }
@@ -2824,7 +3015,231 @@ void move_enemy(){
     
 }
 
+void attack(){
+    if (player.now_weapon == -1)
+    {
+        
+    }
+    else if (player.now_weapon == 0)
+    {
+        for (int i = 0; i < 50; i++)
+        {
+            if (enemy[i].exist == 1 && (enemy[i].position.x >= player.position.x -1) && (enemy[i].position.x <= player.position.x +1) && (enemy[i].position.y >= player.position.y -1) && (enemy[i].position.y <= player.position.y +1) )
+            {
+                enemy[i].health -= 5;
+                if (enemy[i].health < 1)
+                {
+                    enemy[i].exist = 0 ;
+                }
+                
+            }
+            
+        }
+        
+    }
+    else if (player.now_weapon == 4)
+    {
+        if (player.weapon[4])
+        {
+            for (int i = 0; i < 50; i++)
+            {
+                if (enemy[i].exist == 1 && enemy[i].position.x >= player.position.x -1 && enemy[i].position.x <= player.position.x +1 && enemy[i].position.y >= player.position.y -1 && enemy[i].position.y <= player.position.y +1 )
+                {
+                    enemy[i].health -= 10;
+                    if (enemy[i].health < 1)
+                    {
+                        enemy[i].exist = 0 ;
+                    }
+                    
+                }
+                
+            }
+        }
+        else
+        {
+            message_show[1] = 1;
+        }
+        
+        
+    }
+    else if (player.now_weapon == 1)
+    {
+        if (player.weapon[1])
+        {
+            player.weapon[1]--;
+            int ch = getch();
+                int k = 0;
+                int ddone = 0;
+            switch (ch)
+            {
+            case 'w':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x - k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 12;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        break;
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    
+                    if(obstacle_check(player.position.x - k , player.position.y) || w[player.position.x - k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    w[player.position.x - k][player.position.y].what = 102;
+                    w[player.position.x - k][player.position.y].amount = 1;
+                }
+                
+                break;
+            
+            case 's':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x + k , player.position.y , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
+                            {
+                                enemy[i].health -= 12;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x + k , player.position.y) || w[player.position.x + k][player.position.y].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                    w[player.position.x + k][player.position.y].what = 102;
+                    w[player.position.x + k][player.position.y].amount = 1;
+                }
+                break;
 
+            case 'd':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x , player.position.y + k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
+                            {
+                                enemy[i].health -= 12;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , (player.position.y + k)) || w[player.position.x][player.position.y + k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                w[player.position.x][player.position.y + k].what = 102;
+                w[player.position.x][player.position.y + k].amount = 1;
+                    
+                }
+                
+                break;
+
+            case 'a':
+                for (k = 1; k <= 5; k++)
+                {
+                    if (check_live(player.position.x , player.position.y - k , 1))
+                    {
+                        ddone = 1;
+                        for (int i = 0; i < 50; i++)
+                        {
+                            if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
+                            {
+                                enemy[i].health -= 12;
+                                if (enemy[i].health < 1)
+                                {
+                                    enemy[i].exist = 0;
+                                }
+                            }
+                            
+                        }
+                        
+                    }
+                    if (ddone)
+                    {
+                        break;
+                    }
+                    if(obstacle_check(player.position.x , player.position.y - k) || w[player.position.x][player.position.y - k].what == 5){
+                        k--;
+                        break;
+                    }
+                    
+                }
+                if (ddone == 0)
+                {
+                w[player.position.x][player.position.y - k].what = 102;
+                w[player.position.x][player.position.y - k].amount = 1;
+                    
+                }
+                
+                break;    
+            
+            default:
+                break;
+            }
+            
+        }
+        else
+        {
+            message_show[1] = 1;
+        }
+    }
+    
+    
+    
+}
 
 
 
