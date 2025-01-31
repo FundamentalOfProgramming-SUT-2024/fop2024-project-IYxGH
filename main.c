@@ -39,6 +39,8 @@ typedef struct{
     int now_weapon;
     char last_shot; 
     int spell[3];  // 0 for health, 1 for speed , 2 for damage
+    int food[3]; // 0 for normal , 1 for damage , 2 for speed
+    int fast_move;
 }player_info;
 
 typedef struct{
@@ -113,6 +115,7 @@ int num_of_enemies;
 enemy_info enemy[100];
 char messages[100][100];
 int message_show[100];
+int last_damage;
 
 
 
@@ -169,6 +172,8 @@ int message_show[100];
     int check_room_pos(int x , int y); // give the room number of pos ,,, give -1 if its in no room
     void attack(int a); // to use weapons, and give damage to enemy
     void init_messages(); // to init messages 
+    void add_food(room_info room); // to randomly add food to rooms
+    void food_list(); // page for list of food
 
     //functions for enemies
     void put_enemy();
@@ -1055,9 +1060,9 @@ void new_game(user_info u){
 
     player.floor = 5;
     player.Mfullness = 8 - diff_level; 
-    player.fullness = 8 - diff_level; 
-    player.Mhit = (8 - diff_level) * 20;
-    player.hit = (8 - diff_level) * 20;
+    player.fullness = (8 - diff_level)*250; 
+    player.Mhit = (8 - diff_level) * 40;
+    player.hit = (8 - diff_level) * 40;
     player.weapon[0] = 1;
     player.weapon[1] = 0;
     player.weapon[2] = 0;
@@ -1216,7 +1221,7 @@ void corridor_maker(room_info room_1 , room_info room_2 , int type){
 }
 
 void add_pillar(room_info room){
-    int num = randomint(0,5);
+    int num = randomint(0,3);
     for (int i = 0; i < num; i++)
     {
         int xx = randomint(room.up_left.x + 2 , room.bottom_right.x -1);
@@ -1276,8 +1281,9 @@ void build_map(){
             room[10*j + i] = s;
             room[10*j + i].E = 1;
             add_pillar(room[10*j + i]);
-            add_gold(room[10*j + i]);
+            add_food(room[10*j + i]);
             add_trap(room[10*j + i]);
+            add_gold(room[10*j + i]);
         }
     }
 
@@ -1509,16 +1515,65 @@ void handle_movement(){
             {
                 attack(1);
             }
+            break;
+
+        case 'E':
+            food_list();
+            break;
 
         default:
             break;
         }
         
-        if (ch != 'i' && ch!= 'j' && ch != 'o')
+        if (ch != 'i' && ch!= 'j' && ch != 'o' && ch != 'E')
         {
+            int temp = player.hit;
             move_enemy();
             check_trap();
+            if (player.hit < temp)
+            {
+                last_damage = 0;
+            }
+            else
+            {
+                last_damage++;
+            }
             
+            if (last_damage > 10)
+            {
+                last_damage = 10;
+            }
+            
+            if (player.fullness >0)
+            {
+                player.fullness--;
+                
+            }
+            if (player.hit < player.Mhit && last_damage >=5)
+            {
+                if (player.fullness > last_damage*5)
+                {
+                    player.hit += last_damage - 3;
+                    player.fullness -= 5*last_damage;
+                    
+                }
+                else
+                {
+                    if (player.fullness)
+                    {
+                        player.hit += player.fullness/5 + 1;
+                        player.fullness = 0;
+                        
+                    }
+                
+                }
+                
+                if (player.hit > player.Mhit)
+                {
+                    player.hit = player.Mhit;
+                } 
+                
+            }
         }
         
 
@@ -1574,10 +1629,6 @@ void pick_item(int x , int y){
         int value = 30 - 5*diff_level;
         player.gold += value;
     }
-    else if (w[x][y].what == 20)
-    {
-        
-    }
     else if (w[x][y].what == 101)
     {
         w[x][y].what = 1;
@@ -1622,10 +1673,29 @@ void pick_item(int x , int y){
         w[x][y].what = 1;
         player.spell[2] += 1; 
     }
-    
-      
+    else if (w[x][y].what == 20)
+    {
+        w[x][y].what = 1;
+        player.food[0]++;
+    }
+    else if (w[x][y].what == 21)
+    {
+        w[x][y].what = 1;
+        player.food[1]++;
+    }
+    else if (w[x][y].what == 22)
+    {
+        w[x][y].what = 1;
+        player.food[2]++;
+    }
+    else if (w[x][y].what == 23)
+    {
+        w[x][y].what = 1;
+        player.fullness -= 150;
+    }
+     
 }
-
+     
 void print_info(){
     mvprintw(1 , 3 , "---%s---" , u.name);
     for (int i = 0; i < LINES; i++)
@@ -1659,7 +1729,7 @@ void print_info(){
     mvprintw(15 , 9 , "[");
     for (int i = 0; i < player.Mfullness; i++)
     {
-        if (i < player.fullness)
+        if (i < (player.fullness/250 +1))
         {
             mvprintw(15 ,  i + 10 , "#");
         }else
@@ -1667,7 +1737,7 @@ void print_info(){
             mvprintw(15 ,  i + 10 , ".");
         }
     }
-    mvprintw(15 ,  player.fullness + 10 , "]" );
+    mvprintw(15 ,  player.Mfullness + 10 , "]\n%d" , player.fullness );
     mvprintw(25 , 0 , "\"i\" -> weapon list");
     mvprintw(27 , 0 , "\"j\" -> spell list");
 }
@@ -1677,18 +1747,15 @@ void add_gold(room_info room){
     if(count > 95){
         int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
         int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
-        // mvprintw(xx , yy , "©");
         w[xx][yy].what = 302;
     }
     else if(count > 55){
         int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
         int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
-        // mvprintw(xx , yy , "©");
         w[xx][yy].what = 301;
         if(count > 80){
             int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
             int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
-            // mvprintw(xx , yy , "©");
             w[xx][yy].what = 301;
         }
     }
@@ -1733,14 +1800,15 @@ void setcolors(){
     init_pair(7 ,  16 , 226);
     init_pair(8 ,  16 , 51);
     init_pair(9 ,  16 , 179);
-    init_pair(10 , 34 , 0 );
-    init_pair(11 , 51 , 0 );
-    init_pair(12 , 160 , 0 );
-    init_pair(13 , 226 , 0 );
+    init_pair(10 , 34 , 0 ); // green
+    init_pair(11 , 51 , 0 ); // nice blue
+    init_pair(12 , 160 , 0 ); // red
+    init_pair(13 , 226 , 0 ); // gold
     init_pair(14 , 0 , 226);
-    init_pair(15 , 204 , 0);
-    init_pair(16 , 220 , 0);
-    init_pair(17 , 128 , 0);
+    init_pair(15 , 204 , 0); //almost pink
+    init_pair(16 , 220 , 0); // gold
+    init_pair(17 , 128 , 0); // purple
+    init_pair(18 , 202 , 0); // orange
       
 }
 
@@ -1980,15 +2048,32 @@ void w_draw(){
                     attron(COLOR_PAIR(11));
                     mvprintw(i , j , ".");
                     attroff(COLOR_PAIR(11));      
-                }
-                
-                
+                }                                
                 break;
-            
 
             case 20:
-                mvprintw(i , j , "◒");
+                attron(COLOR_PAIR(18));
+                mvprintw(i , j , "●");
+                attroff(COLOR_PAIR(18));      
                 break;
+                
+            case 21:
+                attron(COLOR_PAIR(18));
+                mvprintw(i , j , "◒");
+                attroff(COLOR_PAIR(18));      
+                break;            
+
+            case 22:
+                attron(COLOR_PAIR(18));
+                mvprintw(i , j , "◒");
+                attroff(COLOR_PAIR(18));      
+                break;
+
+            case 23:
+                attron(COLOR_PAIR(18));
+                mvprintw(i , j , "●");
+                attroff(COLOR_PAIR(18));      
+                break;    
 
             case 301:
                 attron(COLOR_PAIR(13));
@@ -3720,5 +3805,127 @@ void attack(int a){
     
 }
 
+void add_food(room_info room){
+    int chance = randomint(0 , 100);
+    if (chance > 94)
+    {
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        w[xx][yy].what = 22;
+    }
+    else if (chance>89)
+    {
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        w[xx][yy].what = 21;
+    }else if (chance > 79)
+    {
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        w[xx][yy].what = 23;
+    }else if (chance > 29)
+    {
+        int xx = randomint(room.up_left.x + 1 , room.bottom_right.x);
+        int yy = randomint(room.up_left.y + 1 , room.bottom_right.y);
+        w[xx][yy].what = 20;
+    } 
+}
 
+void food_list(){
+    clear();
+    board();
+    mvprintw(8 , COLS/2 -20 ,  "Normal food:    %d ● (press \'e\' to eat)" , player.food[0]);
+    mvprintw(10 , COLS/2 -20 , "Special food:   %d ◓ (press \'s\' to eat)" , player.food[1]);
+    mvprintw(12 , COLS/2 -20 , "Magic food:     %d ◒ (press \'m\' to eat)" , player.food[2]);
+    mvprintw(14 , COLS/2 -20 , "press \'E\' to continue...");
+
+    int ch = getch();
+
+    switch (ch)
+    {
+    case 'e':
+        if (player.food[0] > 0)
+        {
+            player.food[0]--;
+            player.fullness += 250;
+            clear();
+            board();
+            mvprintw(10 , COLS/2 -20 , "You ate food succusfully!");
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }else
+        {
+            clear();
+            board();
+            attron(COLOR_PAIR(12));
+            mvprintw(10 , COLS/2 -20 , "You don't have food!");
+            attroff(COLOR_PAIR(12));
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }
+        break;
+
+    case 's':
+        if (player.food[1] > 0)
+        {
+            player.food[1]--;
+            player.fullness += 250;
+            clear();
+            board();
+            mvprintw(10 , COLS/2 -20 , "You ate special food succusfully! More power for 3 shots!");
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }else
+        {
+            clear();
+            board();
+            attron(COLOR_PAIR(12));
+            mvprintw(10 , COLS/2 -20 , "You don't have special food!");
+            attroff(COLOR_PAIR(12));
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }
+        
+        
+        break;
+
+    case 'm':
+        if (player.food[2] > 0)
+        {
+            player.food[2]--;
+            player.fullness += 250;
+            player.fast_move += 3;
+            clear();
+            board();
+            mvprintw(10 , COLS/2 -20 , "You ate magic food succusfully! You have 3 more fast move!");
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }else
+        {
+            clear();
+            board();
+            attron(COLOR_PAIR(12));
+            mvprintw(10 , COLS/2 -20 , "You don't have magic food!");
+            attroff(COLOR_PAIR(12));
+            mvprintw(12 , COLS/2 -20 , "press any key to continue...");
+            getch();
+        }
+        
+        
+        break;
+
+    case 'E':
+    break;
+
+    default:
+        food_list();
+        break;
+    }
+
+    if (player.fullness > player.Mfullness * 250 )
+    {
+        player.fullness = player.Mfullness * 250;
+    }
+    
+}
 
