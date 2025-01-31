@@ -36,6 +36,8 @@ typedef struct{
     int fullness;
     int Mfullness;
     int weapon[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
+    int now_weapon;
+    int last_shot;
     int spell[3];  // 0 for health, 1 for speed , 2 for damage
 }player_info;
 
@@ -82,6 +84,7 @@ typedef struct
 typedef struct{
     int vision;
     int what;
+    int amount;
 }wpos;
 
 typedef struct{
@@ -160,6 +163,8 @@ enemy_info enemy[100];
     void victory_page(); // goes to victory page
     void check_trap(); // check if there is a trap or not
     int check_live(int x , int y , int who); // check if there is enemy or player in that pos ,,, 0 for both ,,, 1 for enemy ,,, 2 for player
+    int check_room_pos(int x , int y); // give the room number of pos ,,, give -1 if its in no room
+
 
     //functions for enemies
     void put_enemy();
@@ -1039,15 +1044,17 @@ void new_game(user_info u){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 1;
+    player.floor = 5;
     player.Mfullness = 8 - diff_level; 
     player.fullness = 8 - diff_level; 
     player.Mhit = (8 - diff_level) * 20;
     player.hit = (8 - diff_level) * 20;
+    player.weapon[0] = 1;
+    player.now_weapon = 0;
     build_map();
     put_player();
-    put_stairs();
     put_enemy();
+    put_stairs();
     handle_movement();    
 }
 
@@ -1334,7 +1341,7 @@ void put_stairs(){
             {
                 int xx = randomint(room[10*jj + ii].up_left.x + 1 , room[10*jj + ii].bottom_right.x);
                 int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y);
-                if (w[xx][yy].what == 1)
+                if (w[xx][yy].what == 1 && check_live(xx, yy , 1) == 0)
                 {
                     w[xx][yy].what = 7;
                     done = 1;
@@ -1362,8 +1369,8 @@ void new_floor(){
         room_reset();
         build_map();
     }
-    put_stairs();
     put_enemy();
+    put_stairs();
     refresh();
     handle_movement();
 }
@@ -1372,7 +1379,6 @@ void handle_movement(){
     while (1)
     {   
         clear();
-        check_trap();
         print_info();
         w_draw();
         mvaddch(player.position.x , player.position.y , '@');
@@ -1476,6 +1482,14 @@ void handle_movement(){
             break;
         }
         
+        if (ch != 'i' && ch!= 'j' && ch != 'o')
+        {
+            move_enemy();
+            check_trap();
+            
+        }
+        
+
     }
 }
 
@@ -1486,6 +1500,31 @@ int check_room(room_info room){
         }
     }
     return 0;
+}
+
+int check_room_pos(int x , int y){
+    for (int i = 0; i < 4; i++)
+    {
+        for (int j = 0; j < 2; j++)
+        {
+            int k = 10*j + i;
+            if (room[k].E == 1)
+            {
+                if (room[k].up_left.x < x && room[k].bottom_right.x > x)
+                {
+                if (room[k].up_left.y < y && room[k].bottom_right.y > y)
+                {
+                    return k;
+                }
+                
+                }
+                
+            }
+            
+        }
+        
+    }
+    return -1;
 }
 
 void pick_item(int x , int y){
@@ -1874,15 +1913,20 @@ void w_draw(){
 void put_spellandweapon(){
     int wp = randomint(0 , 8 - diff_level*2);
     while(wp>0){
-        int wwp = randomint(0 , 5);      
+        int wwp = randomint(1 , 5);    
+        if (wwp == 4 && player.weapon[4] > 0)
+        {
+            continue;
+        }
+          
         int done = 0;
         while(done == 0){
             int xx = randomint(2 , 34);
-            int yy = randomint(2, 130);
+            int yy = randomint(20, 132);
             if(w[xx][yy].what == 1){
                 w[xx][yy].what = 101 + wwp;
                 done = 1;
-                wp -= 2;
+                wp -= 1;
             }
         }
         
@@ -2014,7 +2058,7 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'D';
                                     enemy[num_of_enemies].health = 5;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_D++;
@@ -2027,7 +2071,7 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'F';
                                     enemy[num_of_enemies].health = 10;
-                                    enemy[num_of_enemies].movement_left = -1;
+                                    enemy[num_of_enemies].movement_left = 20;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_F++;
@@ -2070,7 +2114,7 @@ void put_enemy(){
                                 {
                                     enemy[num_of_enemies].type = 'U';
                                     enemy[num_of_enemies].health = 30;
-                                    enemy[num_of_enemies].movement_left = 0;
+                                    enemy[num_of_enemies].movement_left = -1;
                                     enemy[num_of_enemies].position.x = xx;
                                     enemy[num_of_enemies].position.y = yy;
                                     num_S++;
@@ -2288,7 +2332,499 @@ void print_enemy(){
 void move_enemy(){
     for (int i = 0; i < 50; i++)
     {
-        /* code */
+    if (enemy[i].exist == 1 && (check_room_pos(player.position.x , player.position.y) == check_room_pos(enemy[i].position.x , enemy[i].position.y)))
+    {
+        if (enemy[i].type == 'D')
+        {
+            //damage
+            if ((player.position.x >= (enemy[i].position.x - 1)) && (player.position.x <= (enemy[i].position.x + 1)))
+            {
+            if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
+            {
+                player.hit -= 3;
+                break;
+            }
+            }
+            
+            //move
+            pos temp = enemy[i].position;
+            if (enemy[i].movement_left > 0)
+            {
+            if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+                
+            }
+            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+            }
+            else if (player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+
+            }
+
+            if (temp.x != enemy[i].position.x || temp.y != enemy[i].position.y)
+            {
+                enemy[i].movement_left--;
+            }
+            
+        }
+        else if (enemy[i].type == 'F')
+        {
+            //damage
+            if ((player.position.x >= (enemy[i].position.x - 2)) && (player.position.x <= (enemy[i].position.x + 2)))
+            {
+            if((player.position.y >= (enemy[i].position.y - 2)) && (player.position.y <= (enemy[i].position.y + 2)))
+            {
+                player.hit -= 4;
+                break;
+            }
+            }
+
+            //move
+            pos temp = enemy[i].position;
+            if (enemy[i].movement_left > 0)
+            {
+            if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.x--;
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.x--;
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.x++;
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.x++;
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+            }
+            else if (player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+
+            }
+
+            if (temp.x != enemy[i].position.x || temp.y != enemy[i].position.y)
+            {
+                enemy[i].movement_left--;
+            }
+
+        }
+        else if (enemy[i].type == 'G')
+        {
+            //damage
+            if ((player.position.x >= (enemy[i].position.x - 1)) && (player.position.x <= (enemy[i].position.x + 1)))
+            {
+            if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
+            {
+                player.hit -= 15;
+                break;
+            }
+            }
+
+            //move
+            pos temp = enemy[i].position;
+            if (enemy[i].movement_left > 0)
+            {
+                if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+                
+            }
+            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+            }
+            else if (player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+            }
+
+            if (temp.x != enemy[i].position.x || temp.y != enemy[i].position.y)
+            {
+                enemy[i].movement_left--;
+            }
+            
+            
+            
+        }
+        else if (enemy[i].type == 'S')
+        {
+            //damage
+            if ((player.position.x >= (enemy[i].position.x - 1)) && (player.position.x <= (enemy[i].position.x + 1)))
+            {
+            if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
+            {
+                player.hit -= 7;
+                break;
+            }
+            }
+            
+            //move
+            if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+                
+            }
+            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+            }
+            else if (player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+
+        }
+        else if (enemy[i].type == 'U')
+        {
+            //damage
+            if ((player.position.x >= (enemy[i].position.x - 1)) && (player.position.x <= (enemy[i].position.x + 1)))
+            {
+            if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
+            {
+                player.hit -= 15;
+                if (enemy[i].movement_left == -1)
+                {
+                    enemy[i].movement_left = 5;
+                }
+                
+                break;
+            }
+            }
+            
+            //move
+            pos temp = enemy[i].position;
+            if (enemy[i].movement_left > 0)
+            {
+
+            if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+                
+            }
+            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
+            {
+                
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+            else if (player.position.x > enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x++;
+                }
+            }
+            else if (player.position.x < enemy[i].position.x)
+            {
+                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                {
+                    enemy[i].position.x--;
+                }
+            }
+            else if (player.position.y > enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
+                {
+                    enemy[i].position.y++;
+                }
+            }
+            else if (player.position.y < enemy[i].position.y)
+            {
+                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
+                {
+                    enemy[i].position.y--;
+                }
+            }
+
+            }
+
+
+            if (temp.x != enemy[i].position.x || temp.y != enemy[i].position.y)
+            {
+                enemy[i].movement_left--;
+            }
+        }
+        
+        
+        
+        
+        
+    }
+    
     }
     
 }
+
+
+
+
+
