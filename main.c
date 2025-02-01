@@ -181,6 +181,7 @@ int damage_spell_left;
     void load_last_game(); //read the data for loading the last game
     void pause_page(); // pause the game to save the game or exit
     void check_end(); // if the player is alive or not
+    void double_move(); // when player have speed spell 
 
     //functions for enemies
     void put_enemy();
@@ -1246,6 +1247,9 @@ void new_game(){
     player.weapon[2] = 0;
     player.weapon[3] = 0;
     player.weapon[4] = 0;
+    player.spell[0] = 10;
+    player.spell[1] = 10;
+    player.spell[2] = 10;
     player.last_shot = '0';
     player.now_weapon = 0;
     build_map();
@@ -1592,6 +1596,11 @@ void handle_movement(){
             }else{
                 player.position.x--;
             }
+            if (speed_spell_left)
+            {
+                double_move();
+            }
+            
             break;
         
         case 's':
@@ -1599,6 +1608,10 @@ void handle_movement(){
                 break;
             }else{
                 player.position.x++;
+            }
+            if (speed_spell_left)
+            {
+                double_move();
             }
             break;
 
@@ -1608,6 +1621,10 @@ void handle_movement(){
             }else{
                 player.position.y--;
             }
+            if (speed_spell_left)
+            {
+                double_move();
+            }
             break;
 
         case 'd':
@@ -1615,6 +1632,10 @@ void handle_movement(){
                 break;
             }else{
                 player.position.y++;
+            }
+            if (speed_spell_left)
+            {
+                double_move();
             }
             break;
 
@@ -1625,6 +1646,10 @@ void handle_movement(){
                 player.position.x--;
                 player.position.y--;
             }
+            if (speed_spell_left)
+            {
+                double_move();
+            }
             break;
 
         case 'z': 
@@ -1633,6 +1658,10 @@ void handle_movement(){
             }else{
                 player.position.x++;
                 player.position.y--;
+            }
+            if (speed_spell_left)
+            {
+                double_move();
             }
             break;
 
@@ -1643,6 +1672,10 @@ void handle_movement(){
                 player.position.x--;
                 player.position.y++;
             }
+            if (speed_spell_left)
+            {
+                double_move();
+            }
             break;
 
         case 'c':
@@ -1651,6 +1684,10 @@ void handle_movement(){
             }else{
                 player.position.x++;
                 player.position.y++;
+            }
+            if (speed_spell_left)
+            {
+                double_move();
             }
             break;
 
@@ -1663,6 +1700,8 @@ void handle_movement(){
                 victory_page();
             }
             break;
+
+        case 'f':
 
         case 'p':
             pick_item( player.position.x , player.position.y);
@@ -1707,11 +1746,16 @@ void handle_movement(){
             break;
         }
         
-        if (ch != 'i' && ch!= 'j' && ch != 'o' && ch != 'E')
+        if (ch != 'i' && ch != 'j' && ch != 'o' && ch != 'E')
         {
+            
+            
+            
             int temp = player.hit;
             move_enemy();
             check_trap();
+
+            //heal
             if (player.hit < temp)
             {
                 last_damage = 0;
@@ -1733,17 +1777,28 @@ void handle_movement(){
             }
             if (player.hit < player.Mhit && last_damage >=5)
             {
-                if (player.fullness > last_damage*5)
+                if (player.fullness > last_damage*3)
                 {
                     player.hit += last_damage - 3;
-                    player.fullness -= 5*last_damage;
+                    if (health_spell_left)
+                    {
+                        player.hit += last_damage - 3;
+                    }
+                    
+                    
+                    player.fullness -= 3*last_damage;
                     
                 }
                 else
                 {
-                    if (player.fullness)
+                    if (player.fullness > 0)
                     {
-                        player.hit += player.fullness/5 + 1;
+                        player.hit += player.fullness/3 + 1;
+                        if (health_spell_left)
+                        {
+                            player.hit += player.fullness/3 +1;
+                        }
+                        
                         player.fullness = 0;
                         
                     }
@@ -1755,6 +1810,20 @@ void handle_movement(){
                     player.hit = player.Mhit;
                 } 
                 
+            }
+
+            
+            if (health_spell_left)
+            {
+                health_spell_left--;
+            }
+            if (speed_spell_left)
+            {
+                speed_spell_left--;
+            }
+            if (damage_spell_left)
+            {
+                damage_spell_left--;
             }
         }
         check_end();
@@ -1920,6 +1989,25 @@ void print_info(){
         }
     }
     mvprintw(15 ,  player.Mfullness + 10 , "]\n%d" , player.fullness );
+    if (health_spell_left)
+    {   
+        attron(COLOR_PAIR(10));
+        mvprintw(20 , 0 , "health boost: %d" , health_spell_left);
+        attroff(COLOR_PAIR(10));
+    }
+    if (speed_spell_left)
+    {   
+        attron(COLOR_PAIR(10));
+        mvprintw(21 , 0 , "Speed boost: %d" , speed_spell_left);
+        attroff(COLOR_PAIR(10));
+    }
+    if (damage_spell_left)
+    {   
+        attron(COLOR_PAIR(10));
+        mvprintw(22 , 0 , "damage boost: %d" , damage_spell_left);
+        attroff(COLOR_PAIR(10));
+    }
+    
     mvprintw(26 , 0 , "\"i\" -> weapon list");
     mvprintw(27 , 0 , "\"j\" -> spell list");
     mvprintw(28 , 0 , "\"E\" -> food list");
@@ -2167,15 +2255,55 @@ void spell_list(){
         switch (ch)
         {
         case 'h':
-            health_spell_left = 10;
+            if (player.spell[0] > 0)
+            {
+                health_spell_left = 10;
+                player.spell[0]--;
+
+            }else{
+                clear();
+                board();
+                attron(COLOR_PAIR(12));
+                mvprintw(10 , COLS/2 -10 , "You don't have Health spell!");
+                attroff(COLOR_PAIR(12));
+                getch();
+                spell_list();
+            }
+        
             break;
         
         case 's':
-            speed_spell_left = 10;
+            if (player.spell[1] > 0)
+            {
+                speed_spell_left = 10;
+                player.spell[1]--;
+
+            }else{
+                clear();
+                board();
+                attron(COLOR_PAIR(12));
+                mvprintw(10 , COLS/2 -10 , "You don't have Speed spell!");
+                attroff(COLOR_PAIR(12));
+                getch();
+                spell_list();
+            }
             break;
             
         case 'd':
-            damage_spell_left = 10;
+            if (player.spell[2] > 0)
+            {
+                damage_spell_left = 10;
+                player.spell[2]--;
+
+            }else{
+                clear();
+                board();
+                attron(COLOR_PAIR(12));
+                mvprintw(10 , COLS/2 -10 , "You don't have damage spell!");
+                attroff(COLOR_PAIR(12));
+                getch();
+                spell_list();
+            }
             break;
             
         case 'j':
@@ -3339,6 +3467,11 @@ void attack(int a){
             if (enemy[i].exist == 1 && (enemy[i].position.x >= player.position.x -1) && (enemy[i].position.x <= player.position.x +1) && (enemy[i].position.y >= player.position.y -1) && (enemy[i].position.y <= player.position.y +1) )
             {
                 enemy[i].health -= 5;
+                if (damage_spell_left)
+                {
+                    enemy[i].health -= 5;
+                }
+                
                 if (enemy[i].health < 1)
                 {
                     enemy[i].exist = 0 ;
@@ -3358,6 +3491,10 @@ void attack(int a){
                 if (enemy[i].exist == 1 && enemy[i].position.x >= player.position.x -1 && enemy[i].position.x <= player.position.x +1 && enemy[i].position.y >= player.position.y -1 && enemy[i].position.y <= player.position.y +1 )
                 {
                     enemy[i].health -= 10;
+                    if (damage_spell_left)
+                    {
+                        enemy[i].health -= 10;
+                    }
                     if (enemy[i].health < 1)
                     {
                         enemy[i].exist = 0 ;
@@ -3411,6 +3548,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 12;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 12;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3455,6 +3596,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 12;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 5;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3497,6 +3642,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
                             {
                                 enemy[i].health -= 12;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 12;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3541,6 +3690,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 12;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 12;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3620,6 +3773,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 5;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 5;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3664,6 +3821,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 5;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 5;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3706,6 +3867,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
                             {
                                 enemy[i].health -= 5;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 5;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3750,6 +3915,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 5;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 5;
+                                }
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
@@ -3829,6 +3998,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 15;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 15;
+                                }
                                 enemy[i].movement_left = 0;
                                 if (enemy[i].health < 1)
                                 {
@@ -3874,6 +4047,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 15;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 15;
+                                }
                                 enemy[i].movement_left = 0;
                                 if (enemy[i].health < 1)
                                 {
@@ -3962,6 +4139,10 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 15;
+                                if (damage_spell_left)
+                                {
+                                    enemy[i].health -= 15;
+                                }
                                 enemy[i].movement_left = 0;
                                 if (enemy[i].health < 1)
                                 {
@@ -4229,3 +4410,78 @@ void check_end(){
     
 }
 
+void double_move(){
+    int ch = getch();
+        if(ch == 27){closeall(0);}
+        switch (ch)
+        {
+        case 'w':
+            if(obstacle_check(player.position.x - 1 , player.position.y)){
+                break;
+            }else{
+                player.position.x--;
+            }
+            break;
+        
+        case 's':
+            if(obstacle_check(player.position.x + 1 , player.position.y)){
+                break;
+            }else{
+                player.position.x++;
+            }
+            break;
+
+        case 'a':
+            if(obstacle_check(player.position.x  , player.position.y - 1)){
+                break;
+            }else{
+                player.position.y--;
+            }
+            break;
+
+        case 'd':
+            if(obstacle_check(player.position.x  , player.position.y + 1)){
+                break;
+            }else{
+                player.position.y++;
+            }
+            break;
+
+        case 'q':
+            if(obstacle_check(player.position.x - 1 , player.position.y - 1)){
+                break;
+            }else{
+                player.position.x--;
+                player.position.y--;
+            }
+            break;
+
+        case 'z': 
+            if(obstacle_check(player.position.x + 1 , player.position.y - 1)){
+                break;
+            }else{
+                player.position.x++;
+                player.position.y--;
+            }
+            break;
+
+        case 'e':
+            if(obstacle_check(player.position.x - 1 , player.position.y + 1)){
+                break;
+            }else{
+                player.position.x--;
+                player.position.y++;
+            }
+            break;
+
+        case 'c':
+            if(obstacle_check(player.position.x + 1 , player.position.y + 1)){
+                break;
+            }else{
+                player.position.x++;
+                player.position.y++;
+            }
+            break;
+        }
+
+}
