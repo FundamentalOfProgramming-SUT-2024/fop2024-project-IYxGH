@@ -38,8 +38,8 @@ typedef struct{
     int weapon[5]; // 0 for mace, 1 for dagger, 2 for magic wand, 3 for normal arrow, 4 for sword
     int now_weapon;
     char last_shot; 
-    int spell[3];  // 0 for health, 1 for speed , 2 for damage
-    int food[3]; // 0 for normal , 1 for damage , 2 for speed
+    int spell[5];  // 0 for health, 1 for speed , 2 for damage
+    int food[5]; // 0 for normal , 1 for damage , 2 for speed
     int fast_move;
 }player_info;
 
@@ -174,6 +174,9 @@ int last_damage;
     void init_messages(); // to init messages 
     void add_food(room_info room); // to randomly add food to rooms
     void food_list(); // page for list of food
+    void save_last_game(); // to save the last game and put it in the files
+    void load_last_game(); //read the data for loading the last game
+    void pause_page(); // pause the game to save the game or exit
 
     //functions for enemies
     void put_enemy();
@@ -194,7 +197,7 @@ int main(){
     curs_set(FALSE);
     cbreak();
     int required_lines = 35;
-    int required_cols = 130;
+    int required_cols = 135;
     diff_level = 1;
     int rows , cols;
     getmaxyx(stdscr, rows, cols);
@@ -207,14 +210,153 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    // menu_1();
-    // menu_2();
-    new_game(u);
+    menu_1();
+    menu_2();
+    // new_game(u);
 
     endwin();
     return 0;
 }
 
+
+void save_last_game(){
+    if (u.guest == 1)
+    {
+        clear();
+        board();
+        attron(COLOR_PAIR(12));
+        mvprintw(LINES/2 - 5 , COLS/2 - 15 , "You cant save your progress as a guest! :(");
+        attroff(COLOR_PAIR(12));
+        getch();
+        return;
+    }
+    char address[100];
+    strcpy(address , "last/");
+    strcat(address , u.name);
+    strcat(address , ".txt");
+    
+    FILE *file = fopen(address , "w");
+
+    fprintf(file , "1 ");
+
+    // saving wpos w
+    for (int i = 0; i < 35; i++)
+    {
+        for (int j = 0; j < 200; j++)
+        {
+            fprintf(file , "%d %d %d " , w[i][j].what , w[i][j].vision , w[i][j].amount);
+        }
+        
+    }
+
+    // saving rooms
+    for (int i = 0; i < 100; i++)
+    {
+        fprintf(file , "%d %d %d %d " , room[i].bottom_right.x ,room[i].bottom_right.y , room[i].up_left.x , room[i].up_left.y);
+        fprintf(file , "%d %d %d " , room[i].W , room[i].L , room[i].E);
+    }
+
+    // saving player info
+    fprintf(file , "%d %d %d %d %d %c %d %d " , player.fast_move , player.floor , player.fullness , player.gold , player.hit , player.last_shot , player.Mfullness , player.Mhit);
+    fprintf(file , "%d %d %d %d " , player.position.x , player.position.y , player.points , player.now_weapon);
+    for (int i = 0; i < 5; i++)
+    {
+        fprintf(file , "%d %d %d " , player.food[i] , player.spell[i] , player.weapon[i]);
+    }
+
+    // saving enemies
+    for (int i = 0; i < 100; i++)
+    {
+        fprintf(file , "%d %d %d %d %d %d %c " , enemy[i].ammo_left , enemy[i].exist , enemy[i].health , enemy[i].movement_left , enemy[i].position.x , enemy[i].position.y , enemy[i].type);
+        
+    }
+    fprintf(file , "%d %d %d %d %d %d " , num_D , num_F , num_G , num_of_enemies , num_S , num_U );
+    
+
+    //saving other infos
+    fprintf(file ,"%d %d %d %d " , last_damage , diff_level , music , hero_color);
+    
+
+
+    fclose(file);
+}
+
+void load_last_game(){
+
+    char address[100];
+    strcpy(address , "last/");
+    strcat(address , u.name);
+    strcat(address , ".txt");
+    
+    FILE *file = fopen(address , "r");
+    if (file == NULL)
+    {
+        clear();
+        board();
+        attron(COLOR_PAIR(12));
+        mvprintw(LINES/2 - 5 , COLS/2 - 15 , "You don't have last game.");
+        attroff(COLOR_PAIR(12));
+        getch();
+        menu_2();
+        return;
+        
+    }
+    
+
+    int temp;
+    fscanf(file , "%d" , &temp);
+    if (temp == 0)
+    {
+        clear();
+        board();
+        attron(COLOR_PAIR(12));
+        mvprintw(LINES/2 - 5 , COLS/2 - 15 , "You don't have last game.");
+        attroff(COLOR_PAIR(12));
+        getch();
+
+        menu_2();
+        return;
+    }
+
+    for (int i = 0; i < 35; i++)
+    {
+        for (int j = 0; j < 200; j++)
+        {
+            fscanf(file , "%d %d %d " , &w[i][j].what , &w[i][j].vision , &w[i][j].amount);
+        }
+        
+    }
+
+    // loading rooms;
+    for (int i = 0; i < 100; i++)
+    {
+        fscanf(file , "%d %d %d %d " , &room[i].bottom_right.x ,&room[i].bottom_right.y , &room[i].up_left.x , &room[i].up_left.y);
+        fscanf(file , "%d %d %d " , &room[i].W , &room[i].L , &room[i].E);
+    }
+
+    //loading player info
+    fscanf(file , "%d %d %d %d %d %c %d %d " , &player.fast_move , &player.floor , &player.fullness , &player.gold , &player.hit , &player.last_shot , &player.Mfullness , &player.Mhit);
+    fscanf(file , "%d %d %d %d " , &player.position.x , &player.position.y , &player.points , &player.now_weapon);
+    for (int i = 0; i < 5; i++)
+    {
+        fscanf(file , "%d %d %d " , &player.food[i] , &player.spell[i] , &player.weapon[i]);
+    }
+
+    //loading enemies
+    for (int i = 0; i < 100; i++)
+    {
+        fscanf(file , "%d %d %d %d %d %d %c " , &enemy[i].ammo_left , &enemy[i].exist , &enemy[i].health , &enemy[i].movement_left , &enemy[i].position.x , &enemy[i].position.y , &enemy[i].type);      
+    }
+    fscanf(file , "%d %d %d %d %d %d " , &num_D , &num_F , &num_G , &num_of_enemies , &num_S , &num_U );
+
+
+    fscanf(file ,"%d %d %d %d " , &last_damage , &diff_level , &music , &hero_color);
+
+    fclose(file);
+    handle_movement();
+    
+
+}
 
 void board()
 {
@@ -273,6 +415,7 @@ void menu_1()
         u.guest = 1 ;
         break;
     }
+
 }
 
 void room_reset(){
@@ -794,7 +937,7 @@ void menu_2(){
     noecho();
     board();
     int choice = 0;
-    const char *menu_items[] = {"New Game" , "Load game" , "Profile" , "Rankings" , "Settings"};
+    const char *menu_items[] = {"New Game" , "Load game" , "Exit" , "Rankings" , "Settings"};
 
 
     while(1){
@@ -823,11 +966,11 @@ void menu_2(){
         break;
 
     case 1:
-        
+        load_last_game();
         break;
 
     case 2:
-
+        closeall();
         break;
 
     case 3:
@@ -1521,6 +1664,10 @@ void handle_movement(){
             food_list();
             break;
 
+        case '0':
+            pause_page();
+            break;
+
         default:
             break;
         }
@@ -1738,8 +1885,10 @@ void print_info(){
         }
     }
     mvprintw(15 ,  player.Mfullness + 10 , "]\n%d" , player.fullness );
-    mvprintw(25 , 0 , "\"i\" -> weapon list");
+    mvprintw(26 , 0 , "\"i\" -> weapon list");
     mvprintw(27 , 0 , "\"j\" -> spell list");
+    mvprintw(28 , 0 , "\"E\" -> food list");
+    mvprintw(29 , 0 , "\"0\" -> pause");
 }
 
 void add_gold(room_info room){
@@ -3927,5 +4076,54 @@ void food_list(){
         player.fullness = player.Mfullness * 250;
     }
     
+}
+
+void pause_page(){
+    noecho();
+    clear();
+    board();
+    int choice = 0;
+    const char *sign_or_log[] = {"Back to the game" , "SAVE" , "EXIT"};
+
+    refresh();
+    while(1){
+        for(int i = 0 ; i < 3 ; i++)
+        {
+            if(i == choice){
+                attron(A_REVERSE);
+            }
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            if(i == choice){
+                attroff(A_REVERSE);
+            }
+        }
+        int ch = getch();
+        if (ch == KEY_UP )
+            choice = (choice == 0) ? 2 : choice - 1;
+        else if(ch == KEY_DOWN)
+            choice = (choice == 2) ? 0 : choice + 1;
+        else if( ch == 10)
+            break;
+    }
+    switch (choice)
+    {
+    case 0:
+        break;
+
+    case 1:
+        save_last_game();
+        clear();
+        board();
+        attron(COLOR_PAIR(10));
+        mvprintw(LINES/2 - 2 , COLS/2 - 15 , "Game saved succesfully! press any key to continue...");
+        attroff(COLOR_PAIR(10));
+        getch();
+        break;
+
+    case 2:
+        menu_2();
+        break;
+    }
+
 }
 
