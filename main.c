@@ -182,6 +182,7 @@ int damage_spell_left;
     void pause_page(); // pause the game to save the game or exit
     void check_end(); // if the player is alive or not
     void double_move(); // when player have speed spell 
+    void tresure_floor(); // just one room, full of enemies, full of traps, kill them all for victory
 
     //functions for enemies
     void put_enemy();
@@ -215,9 +216,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    menu_1();
-    menu_2();
-    // new_game(u);
+    // menu_1();
+    // menu_2();
+    new_game(u);
 
     endwin();
     return 0;
@@ -1236,7 +1237,7 @@ void new_game(){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 1;
+    player.floor = 5;
     player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
@@ -1256,6 +1257,7 @@ void new_game(){
     put_player();
     put_enemy();
     put_stairs();
+    tresure_floor();/**/
     handle_movement();    
 }
 
@@ -1697,7 +1699,8 @@ void handle_movement(){
                 new_floor();
             }
             else if(w[player.position.x][player.position.y].what == 1007){
-                victory_page();
+                // victory_page();
+                tresure_floor();
             }
             break;
 
@@ -4485,3 +4488,91 @@ void double_move(){
         }
 
 }
+
+void tresure_floor(){
+    clear();
+    room_reset();
+    w_reset();
+    reset_enemy();
+    noecho();
+    curs_set(FALSE);
+
+    room[55].E = 1;
+    room[55].up_left.x = randomint(LINES/8  , LINES/8 * 3);
+    room[55].bottom_right.x= randomint(LINES/8 * 5 , LINES/8 * 7);
+    room[55].up_left.y = randomint(COLS/2 - 22 , COLS/2 - 17);
+    room[55].bottom_right.y = randomint(COLS/2 + 20 , COLS/2 + 26);
+
+    for (int i = room[55].up_left.x; i <= room[55].bottom_right.x ; i++)
+    {
+        w[i][room[55].up_left.y].what = 1002; 
+        w[i][room[55].bottom_right.y].what = 1002; 
+    }
+    for (int i = room[55].up_left.y; i <= room[55].bottom_right.y ; i++)
+    {
+        w[room[55].up_left.x][i].what = 1003; 
+        w[room[55].bottom_right.x][i].what = 1003; 
+    }
+    for (int i = room[55].up_left.x + 1; i < room[55].bottom_right.x ; i++)
+    {
+        for (int j = room[55].up_left.y + 1; j < room[55].bottom_right.y ; j++)
+        {
+            w[i][j].what = 1001; 
+            if (randomint(0 , 15) == 6)
+            {
+                w[i][j].what = 1008;
+            }else if (randomint(0,50)== 9)
+            {
+                w[i][j].what = 1004;
+            }
+            
+            
+        }    
+    }
+
+    int xx = randomint(room[55].up_left.x + 1 , room[55].bottom_right.x);
+    int yy = randomint(room[55].up_left.y + 1 , room[55].bottom_right.y);
+    while (w[xx][yy].what != 1001)
+    {
+        xx = randomint(room[55].up_left.x + 1 , room[55].bottom_right.x);
+        yy = randomint(room[55].up_left.y + 1 , room[55].bottom_right.y);
+    }
+    player.position.x = xx;
+    player.position.y = yy;
+    
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
