@@ -116,6 +116,9 @@ enemy_info enemy[100];
 char messages[100][100];
 int message_show[100];
 int last_damage;
+int health_spell_left;
+int speed_spell_left;
+int damage_spell_left;
 
 
 
@@ -130,11 +133,11 @@ int last_damage;
     void add_name(char n[]);
     void login_page();
     void menu_2();
-    void add_user(user_info u);
+    void add_user();
     int pass_authenticator(user_info u); //check if the password is correct
     char *generatePassword(); //generate random valid password
     int randomint(int a , int b); //generate random number between a and b
-    void new_game(user_info u); //game page
+    void new_game(); //game page
     void room_generator(pos a , pos b); //generate random room
     void corridor_maker(room_info room_1 , room_info room_2 , int type); //generate corridor between rooms
     void add_pillar(room_info room); //generate pillars in chosen room
@@ -177,6 +180,7 @@ int last_damage;
     void save_last_game(); // to save the last game and put it in the files
     void load_last_game(); //read the data for loading the last game
     void pause_page(); // pause the game to save the game or exit
+    void check_end(); // if the player is alive or not
 
     //functions for enemies
     void put_enemy();
@@ -275,7 +279,7 @@ void save_last_game(){
 
     //saving other infos
     fprintf(file ,"%d %d %d %d " , last_damage , diff_level , music , hero_color);
-    
+    fprintf(file , "%d %d %d " , health_spell_left , damage_spell_left , speed_spell_left);
 
 
     fclose(file);
@@ -351,6 +355,8 @@ void load_last_game(){
 
 
     fscanf(file ,"%d %d %d %d " , &last_damage , &diff_level , &music , &hero_color);
+    fscanf(file , "%d %d %d " , &health_spell_left , &damage_spell_left , &speed_spell_left);
+
 
     fclose(file);
     handle_movement();
@@ -778,6 +784,11 @@ void get_users(){
         strcat(temp , ".txt");
         char linee[256];
         FILE *filee = fopen(temp , "r");
+        if (filee == NULL)
+        {
+            continue;
+        }
+        
         fgets(linee, sizeof(linee), filee);
         size_t lene = strlen(linee); 
         if (lene > 0 && linee[lene - 1] == '\n') {
@@ -887,9 +898,32 @@ void login_page(){
         }
     }
     u.guest = 0;
+    char temp[100];
+    strcpy(temp , u.name);
+    strcat(temp , ".txt");
+    FILE *file = fopen( temp , "r");
+    char line[100];
+    int current_line = 1;
+    while (fgets(line, sizeof(line), file) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (current_line == 2)
+        {
+            strcpy(u.email , line);
+        }else if (current_line == 6)
+        {
+            strcpy(u.date_joined, line);
+        }
+        
+        
+        current_line++;
+    }
+
+    fclose(file);
+
+
 }
 
-void add_user(user_info u){
+void add_user(){
     char temp[100];
     strcpy(temp , u.name);
     strcat(temp , ".txt");
@@ -962,7 +996,7 @@ void menu_2(){
     switch (choice)
     {
     case 0:
-        new_game(u);
+        new_game();
         break;
 
     case 1:
@@ -1193,7 +1227,7 @@ int randomint(int a , int b){
     return ((rand() % (b -a)) + a);
 }
 
-void new_game(user_info u){
+void new_game(){
     clear();
     room_reset();
     w_reset();
@@ -1201,7 +1235,8 @@ void new_game(user_info u){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 5;
+    player.floor = 1;
+    player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
     player.Mhit = (8 - diff_level) * 40;
@@ -1722,7 +1757,7 @@ void handle_movement(){
                 
             }
         }
-        
+        check_end();
 
     }
 }
@@ -2119,12 +2154,34 @@ void spell_list(){
     clear();
     board();
     attron(A_BOLD);
-    mvprintw(4 , COLS/2 - 10 , "Health Spell:  %d  ♨" , player.spell[0]);
-    mvprintw(6 , COLS/2 - 10 , "Speed Spell:   %d  ⟫" , player.spell[1]);
-    mvprintw(8 , COLS/2 - 10 , "Damage Spell:  %d  ↯" , player.spell[2]);
+    mvprintw(4 , COLS/2 - 10 , "Health Spell:  %d  ♨ (Press \'h\' to use)" , player.spell[0]);
+    mvprintw(6 , COLS/2 - 10 , "Speed Spell:   %d  ⟫  (Press \'s\' to use)" , player.spell[1]);
+    mvprintw(8 , COLS/2 - 10 , "Damage Spell:  %d  ↯  (Press \'d\' to use)" , player.spell[2]);
     attroff(A_BOLD);
-    mvprintw(16 , COLS/2 - 10 , "press any key to continue...");
-    getch();
+    mvprintw(16 , COLS/2 - 10 , "press \'j\' to continue...");
+    int ch = getch();
+    while (ch != 'h' && ch != 's' && ch != 'd' && ch != 'j')
+    {
+        ch = getch();
+    }
+        switch (ch)
+        {
+        case 'h':
+            health_spell_left = 10;
+            break;
+        
+        case 's':
+            speed_spell_left = 10;
+            break;
+            
+        case 'd':
+            damage_spell_left = 10;
+            break;
+            
+        case 'j':
+            break;
+        }
+    
 }
 
 void w_reset(){
@@ -4125,5 +4182,50 @@ void pause_page(){
         break;
     }
 
+}
+
+void check_end(){
+    if (player.hit > 0)
+    {   
+        return;
+    }
+
+    clear();
+    board();
+    attron(COLOR_PAIR(12) | A_BOLD);
+    mvprintw(LINES/2 - 5 , COLS/2 - 22 , "You lost the game! :(");
+    attroff(COLOR_PAIR(12) | A_BOLD);
+    attron(COLOR_PAIR(16));
+    mvprintw(LINES/2 - 4 , COLS/2 - 22 , "You got %d golds!" , player.gold);
+    attroff(COLOR_PAIR(16));
+    attron(COLOR_PAIR(11));
+    mvprintw(LINES/2 - 2 , COLS/2 - 22 , "You can try again...");
+    attroff(COLOR_PAIR(11));
+
+    if (u.guest != 1)
+    {
+    char address[100];
+    strcpy(address , "last/");
+    strcat(address , u.name);
+    strcat(address , ".txt");
+    
+    FILE *file = fopen(address , "w");
+    fprintf(file , "0 ");
+
+    fclose(file);
+    }
+
+    char temp[100];
+    strcpy(temp , u.name);
+    strcat(temp , ".txt");
+    FILE *file = fopen( temp , "w");
+    u.total_golds += player.gold;
+    u.total_games++;
+    fprintf(file , "%s\n%s\n%s\n%d\n%d\n%d\n%s" , u.name , u.email , u.pass , u.total_golds , u.total_points , u.total_games , u.date_joined);
+    fclose(file);
+    
+    getch();
+    menu_2();
+    
 }
 
