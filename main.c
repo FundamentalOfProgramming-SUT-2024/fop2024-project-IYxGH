@@ -894,19 +894,6 @@ void login_page(){
             mvprintw(LINES/2   , COLS/2 - 4 , "Not valid usrename!");
         }  
     }
-
-    clear_line(LINES/2   , COLS/2 - 5 , 40);
-    while(1){
-        clear_line(LINES/2 - 5 , COLS/2 +2 , 50);
-        move(LINES/2 - 5 , COLS/2 +2);
-        getnstr(u.pass ,  50);
-        if(pass_authenticator( u ) == 0){
-            mvprintw( LINES/2  , COLS/2 - 4 , "Incorrect passwoord!");
-        }else{
-            break;
-        }
-    }
-    u.guest = 0;
     char temp[100];
     strcpy(temp , u.name);
     strcat(temp , ".txt");
@@ -918,7 +905,13 @@ void login_page(){
         if (current_line == 2)
         {
             strcpy(u.email , line);
-        }else if (current_line == 6)
+        }
+        else if (current_line == 3)
+        {
+            strcpy(u.pass ,line );
+        }
+        
+        else if (current_line == 6)
         {
             strcpy(u.date_joined, line);
         }
@@ -928,6 +921,42 @@ void login_page(){
     }
 
     fclose(file);
+
+    clear_line(LINES/2   , COLS/2 - 5 , 40);
+    while(1){
+        clear_line(LINES/2 - 5 , COLS/2 +2 , 50);
+        char pass[50];
+        mvprintw(LINES/2 + 1  , COLS/2 - 4 , "Type \"F\" if you forgot your password");
+        move(LINES/2 - 5 , COLS/2 +2);
+        getnstr(pass ,  50);
+        if (strcmp(pass , "F") == 0)
+        {
+            clear_line(LINES/2  , COLS/2 - 4 , 20);
+            char email[50];
+            mvprintw( LINES/2 - 3 , COLS/2 - 8 , "Enter your email: ");
+            getnstr(email ,  50);
+            if (strcmp(email , u.email) == 0)
+            {
+                mvprintw(LINES/2 + 2 , COLS/2 -6 , "Your password is: %s" , u.pass);
+            }else
+            {
+                mvprintw(LINES/2 + 2 , COLS/2 - 4 , "Incorrect email!" );
+                clear_line(LINES/ 2  - 3 , COLS/2 - 10 , 40);   
+                continue;             
+            }
+            
+            
+        }
+        
+         
+        if(strcmp ( pass , u.pass) != 0){
+            clear_line(LINES/2 + 2 , COLS/2 - 4 , 20 );
+            mvprintw( LINES/2  , COLS/2 - 4 , "Incorrect passwoord!");
+        }else{
+            break;
+        }
+    }
+    u.guest = 0;
 
 
 }
