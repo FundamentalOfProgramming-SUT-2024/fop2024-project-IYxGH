@@ -122,6 +122,7 @@ int damage_spell_left;
 int last_room; // check if he reached the tresure room or not
 int hit_lost;
 int gold_collected;
+int vision_m;
 
 
 // functions    
@@ -186,6 +187,7 @@ int gold_collected;
     void double_move(); // when player have speed spell 
     void tresure_floor(); // just one room, full of enemies, full of traps, kill them all for victory
     void print_messages(); // to print messages
+    void vision_check(); // check where the player can see
 
     //functions for enemies
     void put_enemy();
@@ -208,6 +210,7 @@ int main(){
     int required_lines = 35;
     int required_cols = 135;
     diff_level = 1;
+    hero_color = 0;
     int rows , cols;
     getmaxyx(stdscr, rows, cols);
     if (rows < required_lines || cols < required_cols) { endwin();  
@@ -238,7 +241,7 @@ void save_last_game(){
         attroff(COLOR_PAIR(12));
         getch();
         return;
-    }
+    }else{
     char address[100];
     strcpy(address , "last/");
     strcat(address , u.name);
@@ -283,11 +286,12 @@ void save_last_game(){
     
 
     //saving other infos
-    fprintf(file ,"%d %d %d %d " , last_damage , diff_level , music , hero_color);
+    fprintf(file ,"%d %d %d %d %d " , last_damage , diff_level , music , hero_color , vision_m);
     fprintf(file , "%d %d %d %d %d " , health_spell_left , damage_spell_left , speed_spell_left , last_room , hit_lost);
 
 
     fclose(file);
+    }
 }
 
 void load_last_game(){
@@ -359,7 +363,7 @@ void load_last_game(){
     fscanf(file , "%d %d %d %d %d %d " , &num_D , &num_F , &num_G , &num_of_enemies , &num_S , &num_U );
 
 
-    fscanf(file ,"%d %d %d %d " , &last_damage , &diff_level , &music , &hero_color);
+    fscanf(file ,"%d %d %d %d %d " , &last_damage , &diff_level , &music , &hero_color , &vision_m);
     fscanf(file , "%d %d %d %d %d " , &health_spell_left , &damage_spell_left , &speed_spell_left , &last_room , &hit_lost);
 
 
@@ -1111,48 +1115,62 @@ void diff_page(){
 }
 
 void char_color(){
+     curs_set(FALSE);
     noecho();
     board();
     int choice = 0;
-    const char *sign_or_log[] = {"Blue" , "White" ,  "Red"};
+    const char *menu_items[] = {"Yellow" , "Purple" , "Green" , "White" , "Blue"};
 
-    refresh();
+
     while(1){
-        for(int i = 0 ; i < 3 ; i++)
+        for(int i = 0 ; i < 5 ; i++)
         {
+            attron(COLOR_PAIR(19 + i));
             if(i == choice){
                 attron(A_REVERSE);
             }
-            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,sign_or_log[i]);
+            mvprintw(LINES/2 - 10 + 2*i , COLS/2 - 5 , "%s" ,menu_items[i]);
             if(i == choice){
                 attroff(A_REVERSE);
             }
+            mvaddch(LINES/2 - 10 + 2*i , COLS/2 + 2 , '@' );
+            attroff(COLOR_PAIR(19 + i));
         }
         int ch = getch();
         if (ch == KEY_UP )
-            choice = (choice == 0) ? 2 : choice - 1;
+            choice = (choice == 0) ? 4 : choice - 1;
         else if(ch == KEY_DOWN)
-            choice = (choice == 2) ? 0 : choice + 1;
+            choice = (choice == 4) ? 0 : choice + 1;
         else if( ch == 10)
             break;
     }
     switch (choice)
     {
     case 0:
-        hero_color = 1;
-        menu_2();
+        hero_color = 0;
         break;
 
     case 1:
-        hero_color = 2;
-        menu_2();
+        hero_color = 1;
         break;
 
     case 2:
-        hero_color = 3;
-        menu_2();
+        hero_color = 2;
         break;
+
+    case 3:
+        hero_color = 3;
+        break;
+
+    case 4:
+        hero_color = 4;
+        break;
+    default:
+    break;
     }
+
+    menu_2();
+
 }
 
 void music_page(){
@@ -1254,6 +1272,10 @@ void new_game(){
     player.spell[0] = 10;
     player.spell[1] = 10;
     player.spell[2] = 10;
+    player.food[0] = 10;
+    player.food[1] = 10;
+    player.food[2] = 10;
+    vision_m = 0;
     player.last_shot = '0';
     player.now_weapon = 0;
     hit_lost = 0;
@@ -1646,10 +1668,13 @@ void new_floor(){
 void handle_movement(){
     while (1)
     {   
+        vision_check();
         clear();
         print_info();
         w_draw();
+        attron(COLOR_PAIR(19 + hero_color));
         mvaddch(player.position.x , player.position.y , '@');
+        attroff(COLOR_PAIR(19 + hero_color));
         print_enemy();
         refresh();
         int ch = getch();
@@ -1770,6 +1795,7 @@ void handle_movement(){
             break;
 
         case 'f':
+            break;
 
         case 'p':
             pick_item( player.position.x , player.position.y);
@@ -1810,11 +1836,16 @@ void handle_movement(){
             pause_page();
             break;
 
+        case 'M':
+            vision_m = (1 - vision_m);
+            break;
+            
+
         default:
             break;
         }
         
-        if (ch != 'i' && ch != 'j' && ch != 'o' && ch != 'E')
+        if (ch != 'i' && ch != 'j' && ch != 'o' && ch != 'E' && ch != 'M' && ch != '0')
         {
             
             
@@ -1917,9 +1948,9 @@ int check_room_pos(int x , int y){
             int k = 10*j + i;
             if (room[k].E == 1)
             {
-                if (room[k].up_left.x < x && room[k].bottom_right.x > x)
+                if (room[k].up_left.x <= x && room[k].bottom_right.x >= x)
                 {
-                if (room[k].up_left.y < y && room[k].bottom_right.y > y)
+                if (room[k].up_left.y <= y && room[k].bottom_right.y >= y)
                 {
                     return k;
                 }
@@ -2156,6 +2187,12 @@ void setcolors(){
     init_pair(16 , 220 , 0); // gold
     init_pair(17 , 128 , 0); // purple
     init_pair(18 , 202 , 0); // orange
+    init_pair(19 , 118  , 0); // yellow
+    init_pair(20 , 165  , 0); // purple
+    init_pair(21 , 34 , 0 ); // green
+    init_pair(22 , 15 , 0 ); // white
+    init_pair(23 , 26 , 0 ); // blue
+
       
 }
 
@@ -2409,44 +2446,53 @@ void w_draw(){
             switch (w[i][j].what)
             {
             case 1:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(11));
                 mvprintw(i , j , ".");
                 attroff(COLOR_PAIR(11));
                 break;
 
             case 2:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(10));
                 mvprintw(i,j , "|");
                 attroff(COLOR_PAIR(10));
                 break;
 
             case 3:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(10));
                 mvprintw(i , j , "-");
                 attroff(COLOR_PAIR(10));
                 break;
             
             case 4:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(12));
                 mvprintw(i , j , "O");
                 attroff(COLOR_PAIR(12));
                 break;
 
             case 5:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "+");
                 break;
 
             case 6:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(A_REVERSE);
                 mvprintw(i , j , "#");
                 attroff(A_REVERSE);
                 break;
 
             case 7:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "▲");            
                 break;
 
             case 8:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 if (w[i][j].vision == 2)
                 {
                     attron(COLOR_PAIR(17));
@@ -2461,104 +2507,124 @@ void w_draw(){
                 break;
 
             case 20:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(18));
                 mvprintw(i , j , "●");
                 attroff(COLOR_PAIR(18));      
                 break;
                 
             case 21:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(18));
                 mvprintw(i , j , "◒");
                 attroff(COLOR_PAIR(18));      
                 break;            
 
             case 22:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(18));
                 mvprintw(i , j , "◒");
                 attroff(COLOR_PAIR(18));      
                 break;
 
             case 23:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(18));
                 mvprintw(i , j , "●");
                 attroff(COLOR_PAIR(18));      
                 break;    
 
             case 301:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(13));
                 mvprintw(i , j , "©");
                 attroff(COLOR_PAIR(13));
                 break;
 
             case 302:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(14));
                 mvprintw(i , j , "℗");
                 attroff(COLOR_PAIR(14));
                 break;
 
             case 101:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "⚒");
                 break;
 
             case 102:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "🗡");
                 break;
 
             case 103:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "⁋");
                 break;
 
             case 104:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "➳");
                 break;
 
             case 105:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "⚔");
                 break;
 
             case 201:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "♨");
                 break;
 
             case 202:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "⟫");
                 break;
 
             case 203:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 mvprintw(i , j , "↯");
                 break;
 
             case 1001:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(15));
                 mvprintw(i , j , ".");
                 attroff(COLOR_PAIR(15));
                 break;
 
             case 1002:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(16));
                 mvprintw(i,j , "|");
                 attroff(COLOR_PAIR(16));
                 break;
 
             case 1003:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(16));
                 mvprintw(i , j , "-");
                 attroff(COLOR_PAIR(16));
                 break;
             
             case 1004:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(12));
                 mvprintw(i , j , "O");
                 attroff(COLOR_PAIR(12));
                 break;
 
             case 1007:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 attron(COLOR_PAIR(11));
                 mvprintw(i , j , "⌂");
                 attroff(COLOR_PAIR(11));
                 break;
 
             case 1008:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
                 if (w[i][j].vision == 2)
                 {
                     attron(COLOR_PAIR(17));
@@ -3027,7 +3093,12 @@ void print_enemy(){
     {
         if (enemy[i].exist == 1 && enemy[i].health >= 1 )
         {
-            mvaddch(enemy[i].position.x , enemy[i].position.y , enemy[i].type);
+            if (w[enemy[i].position.x][enemy[i].position.y].vision > 0 || vision_m == 1)
+            {
+                mvaddch(enemy[i].position.x , enemy[i].position.y , enemy[i].type);
+                
+            }
+            
         }
         
     }
@@ -4361,9 +4432,10 @@ void food_list(){
         {
             player.food[1]--;
             player.fullness += 250;
+            speed_spell_left += 10;
             clear();
             board();
-            mvprintw(10 , COLS/2 -20 , "You ate special food succusfully! More power for 3 shots!");
+            mvprintw(10 , COLS/2 -20 , "You ate special food succusfully! More power for 10 moves!");
             mvprintw(12 , COLS/2 -20 , "press any key to continue...");
             getch();
         }else
@@ -4385,7 +4457,7 @@ void food_list(){
         {
             player.food[2]--;
             player.fullness += 250;
-            player.fast_move += 3;
+            damage_spell_left += 10;
             clear();
             board();
             mvprintw(10 , COLS/2 -20 , "You ate magic food succusfully! You have 3 more fast move!");
@@ -4454,12 +4526,16 @@ void pause_page(){
 
     case 1:
         save_last_game();
+        if (u.guest != 1)
+        {
+        
         clear();
         board();
         attron(COLOR_PAIR(10));
         mvprintw(LINES/2 - 2 , COLS/2 - 15 , "Game saved succesfully! press any key to continue...");
         attroff(COLOR_PAIR(10));
         getch();
+        }
         break;
 
     case 2:
@@ -4711,7 +4787,48 @@ void print_messages(){
     
 }
 
+void vision_check(){
+    int rr = check_room_pos(player.position.x , player.position.y);
+    if (rr != -1)
+    {
+        for (int i = room[rr].up_left.x; i <= room[rr].bottom_right.x ; i++)
+        {
+            for (int j = room[rr].up_left.y; j <= room[rr].bottom_right.y; j++)
+            {
+                if (w[i][j].vision == 0)
+                {
+                    w[i][j].vision = 1;
+                }
+                
+            }
+            
+        }
+        
+    }
 
+    if (rr == -1 || w[player.position.x][player.position.y].what == 5)
+    {
+        for (int i = -2; i < 3; i++)
+        {
+            for (int j = -2; j < 3; j++)
+            {
+                if (w[player.position.x + i][player.position.y + j].what == 6 || w[player.position.x + i][player.position.y + j].what == 5)
+                {
+                    if (w[player.position.x + i][player.position.y + j].vision == 0)
+                    {
+                        w[player.position.x + i][player.position.y + j].vision = 1;
+                    }         
+                }
+                
+            }
+            
+        }
+        
+    }
+    
+    
+
+}
 
 
 
