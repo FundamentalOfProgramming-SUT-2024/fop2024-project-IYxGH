@@ -7,6 +7,8 @@
 #include <wchar.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 
 typedef struct 
@@ -189,6 +191,7 @@ int vision_m;
     void print_messages(); // to print messages
     void vision_check(); // check where the player can see
     void add_window(); // add window to rooms
+    void check_and_create();
 
     //functions for enemies
     void put_enemy();
@@ -202,6 +205,7 @@ int vision_m;
     int num_U;
 
 int main(){
+    check_and_create();
     setlocale(LC_ALL, "");
     initscr();
     start_color();
@@ -231,6 +235,27 @@ int main(){
     return 0;
 }
 
+
+
+void check_and_create() {
+    struct stat st = {0};
+
+    if (stat("last", &st) == -1) {
+        if (mkdir("last", 0700) != 0) {
+            perror("Failed to create directory 'last'");
+            return;
+        }
+    }
+
+    if (access("usernames.txt", F_OK) == -1) {
+        FILE *file = fopen("usernames.txt", "w");
+        if (file == NULL) {
+            perror("Failed to create file 'usernames'");
+            return;
+        }
+        fclose(file);
+    }
+}
 
 void save_last_game(){
     if (u.guest == 1)
@@ -1299,12 +1324,12 @@ void new_game(){
     player.weapon[2] = 0;
     player.weapon[3] = 0;
     player.weapon[4] = 0;
-    player.spell[0] = 10;
-    player.spell[1] = 10;
-    player.spell[2] = 10;
-    player.food[0] = 10;
-    player.food[1] = 10;
-    player.food[2] = 10;
+    player.spell[0] = 0;
+    player.spell[1] = 0;
+    player.spell[2] = 0;
+    player.food[0] = 0;
+    player.food[1] = 0;
+    player.food[2] = 0;
     vision_m = 0;
     player.last_shot = '0';
     player.now_weapon = 0;
@@ -4975,14 +5000,14 @@ if (w[player.position.x ][player.position.y - 1].what == 9)
 }
 
 void add_window(){
-    int h = randomint (3 , 9);
+    int h = randomint (2 , 7);
     while (h)
     {
         int done = 1;
         while (done)
         {
-            int x = randomint(1 , 34);
-            int y = randomint(22 , 135);
+            int x = randomint(8 , 26);
+            int y = randomint(COLS - 100 , COLS - 20);
             if (w[x][y].what == 2 )
             {
                 w[x][y].what = 9;
