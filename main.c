@@ -119,7 +119,8 @@ int last_damage;
 int health_spell_left;
 int speed_spell_left;
 int damage_spell_left;
-
+int last_room; // check if he reached the tresure room or not
+int hit_lost;
 
 
 // functions    
@@ -183,6 +184,7 @@ int damage_spell_left;
     void check_end(); // if the player is alive or not
     void double_move(); // when player have speed spell 
     void tresure_floor(); // just one room, full of enemies, full of traps, kill them all for victory
+    void print_messages(); // to print messages
 
     //functions for enemies
     void put_enemy();
@@ -216,9 +218,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    // menu_1();
-    // menu_2();
-    new_game(u);
+    menu_1();
+    menu_2();
+    // new_game(u);
 
     endwin();
     return 0;
@@ -281,7 +283,7 @@ void save_last_game(){
 
     //saving other infos
     fprintf(file ,"%d %d %d %d " , last_damage , diff_level , music , hero_color);
-    fprintf(file , "%d %d %d " , health_spell_left , damage_spell_left , speed_spell_left);
+    fprintf(file , "%d %d %d %d %d " , health_spell_left , damage_spell_left , speed_spell_left , last_room , hit_lost);
 
 
     fclose(file);
@@ -357,7 +359,7 @@ void load_last_game(){
 
 
     fscanf(file ,"%d %d %d %d " , &last_damage , &diff_level , &music , &hero_color);
-    fscanf(file , "%d %d %d " , &health_spell_left , &damage_spell_left , &speed_spell_left);
+    fscanf(file , "%d %d %d %d %d " , &health_spell_left , &damage_spell_left , &speed_spell_left , &last_room , &hit_lost);
 
 
     fclose(file);
@@ -445,8 +447,8 @@ void closeall(){
 }
 
 void init_messages(){
-    strcpy(messages[0] , "ENEMY hit you!");
-    strcpy(messages[1] , "You dont have weapon!");
+    messages[1]; // enemy hit
+    
 }
 
 void new_user_page(user_info *u)
@@ -1253,11 +1255,13 @@ void new_game(){
     player.spell[2] = 10;
     player.last_shot = '0';
     player.now_weapon = 0;
+    hit_lost = 0;
+    last_room = 0;
     build_map();
     put_player();
     put_enemy();
     put_stairs();
-    tresure_floor();/**/
+    // tresure_floor();/**/
     handle_movement();    
 }
 
@@ -1292,12 +1296,70 @@ void room_generator(pos a , pos b ){
 }
 
 void victory_page(){
-    clear();
-    board();
-    mvprintw(LINES/2 - 5 , COLS/2 - 7 , "You Won!");
-    mvprintw(LINES/2 - 5 , COLS/2 - 7 , "Golds: %d" , player.gold);
-    getch();
-    menu_2();
+    num_of_enemies = 0;
+    for (int i = 0; i < 50; i++)
+    {
+        if (enemy[i].exist ==1)
+        {
+            num_of_enemies++;
+        }
+        
+    }
+    
+    if (last_room == 1 && num_of_enemies ==0)
+    {
+        
+        clear();
+        board();
+        player.points = diff_level*1500 + player.gold * 10 + player.hit*10;
+        attron(COLOR_PAIR(10));
+        mvprintw(LINES/2 - 5 , COLS/2 - 8 , "You Won! :)");
+        attroff(COLOR_PAIR(10));
+
+        attron(COLOR_PAIR(16));
+        mvprintw(LINES/2 - 3 , COLS/2 - 8 , "You got %d golds!" , player.gold);
+        mvprintw(LINES/2 - 1 , COLS/2 - 8 , "You got %d points!" , player.points);
+        attroff(COLOR_PAIR(16));
+
+        attron(COLOR_PAIR(11));
+        mvprintw(LINES/2 +1 , COLS/2 - 8 , "Enjoyed? play again!");
+        mvprintw(LINES/2 +3 , COLS/2 - 8 , "press ENTER to continue...");
+        attroff(COLOR_PAIR(11));
+
+        if (u.guest != 1)
+        {
+        char address[100];
+        strcpy(address , "last/");
+        strcat(address , u.name);
+        strcat(address , ".txt");
+        
+        FILE *file = fopen(address , "w");
+        fprintf(file , "0 ");
+
+        fclose(file);
+        }
+
+        if (u.guest != 1)
+        {
+            char temp[100];
+            strcpy(temp , u.name);
+            strcat(temp , ".txt");
+            FILE *file = fopen( temp , "w");
+            u.total_golds += player.gold;
+            u.total_games++;
+            u.total_points+= player.points;
+            fprintf(file , "%s\n%s\n%s\n%d\n%d\n%d\n%s" , u.name , u.email , u.pass , u.total_golds , u.total_points , u.total_games , u.date_joined);
+            fclose(file);
+        }
+
+        int ch = getch();
+        while (ch != 10)
+        {
+            ch = getch();
+        }
+            menu_2();
+            
+        }
 }
 
 void corridor_maker(room_info room_1 , room_info room_2 , int type){
@@ -1830,6 +1892,7 @@ void handle_movement(){
             }
         }
         check_end();
+        victory_page();
 
     }
 }
@@ -2015,6 +2078,8 @@ void print_info(){
     mvprintw(27 , 0 , "\"j\" -> spell list");
     mvprintw(28 , 0 , "\"E\" -> food list");
     mvprintw(29 , 0 , "\"0\" -> pause");
+    
+    print_messages();
 }
 
 void add_gold(room_info room){
@@ -2666,7 +2731,7 @@ void put_enemy(){
                 while(done1){
                     int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
                     int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
-                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                    if((w[xx][yy].what == 1 || w[xx][yy].what == 1001) && check_live(xx , yy , 0) == 0 ){
                         enemy[num_of_enemies].exist = 1;
                         while (done1)
                         {
@@ -2758,7 +2823,7 @@ void put_enemy(){
                 while(done1){
                     int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
                     int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
-                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                    if((w[xx][yy].what == 1 || w[xx][yy].what == 1001) && check_live(xx , yy , 0) == 0 ){
                         enemy[num_of_enemies].exist = 1;
                         while (done1)
                         {
@@ -2852,7 +2917,7 @@ void put_enemy(){
                 while(done1){
                     int xx = randomint(room[10*jj + ii].up_left.x + 1 ,room[10*jj + ii].bottom_right.x );
                     int yy = randomint(room[10*jj + ii].up_left.y + 1 , room[10*jj + ii].bottom_right.y );
-                    if(w[xx][yy].what == 1 && check_live(xx , yy , 0) == 0 ){
+                    if((w[xx][yy].what == 1 || w[xx][yy].what == 1001) && check_live(xx , yy , 0) == 0 ){
                         enemy[num_of_enemies].exist = 1;
                         while (done1)
                         {
@@ -2974,6 +3039,8 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 3;
+                hit_lost += 3;
+                message_show[1] = 1;
                 continue;;
             }
             }
@@ -3073,6 +3140,8 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 2)) && (player.position.y <= (enemy[i].position.y + 2)))
             {
                 player.hit -= 4;
+                hit_lost += 4;
+                message_show[1] = 1;
                 continue;;
             }
             }
@@ -3159,6 +3228,8 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 15;
+                hit_lost += 15;
+                message_show[1] = 1;
                 continue;
             }
             }
@@ -3259,6 +3330,8 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 7;
+                hit_lost += 7;
+                message_show[1] = 1;
                 continue;
             }
             }
@@ -3350,6 +3423,8 @@ void move_enemy(){
             if((player.position.y >= (enemy[i].position.y - 1)) && (player.position.y <= (enemy[i].position.y + 1)))
             {
                 player.hit -= 15;
+                hit_lost += 15;
+                message_show[1] = 1;
                 if (enemy[i].movement_left == -1)
                 {
                     enemy[i].movement_left = 5;
@@ -3470,6 +3545,7 @@ void attack(int a){
             if (enemy[i].exist == 1 && (enemy[i].position.x >= player.position.x -1) && (enemy[i].position.x <= player.position.x +1) && (enemy[i].position.y >= player.position.y -1) && (enemy[i].position.y <= player.position.y +1) )
             {
                 enemy[i].health -= 5;
+                message_show[2] = 1;
                 if (damage_spell_left)
                 {
                     enemy[i].health -= 5;
@@ -3494,6 +3570,7 @@ void attack(int a){
                 if (enemy[i].exist == 1 && enemy[i].position.x >= player.position.x -1 && enemy[i].position.x <= player.position.x +1 && enemy[i].position.y >= player.position.y -1 && enemy[i].position.y <= player.position.y +1 )
                 {
                     enemy[i].health -= 10;
+                    message_show[2] = 1;
                     if (damage_spell_left)
                     {
                         enemy[i].health -= 10;
@@ -3551,6 +3628,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 12;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 12;
@@ -3599,6 +3677,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 12;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 5;
@@ -3645,6 +3724,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
                             {
                                 enemy[i].health -= 12;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 12;
@@ -3693,6 +3773,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 12;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 12;
@@ -3735,10 +3816,6 @@ void attack(int a){
             }
             
         }
-        else
-        {
-            message_show[1] = 1;
-        }
     }
     else if (player.now_weapon == 3)
     {
@@ -3776,6 +3853,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 5;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 5;
@@ -3824,6 +3902,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 5;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 5;
@@ -3870,6 +3949,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
                             {
                                 enemy[i].health -= 5;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 5;
@@ -3918,6 +3998,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 5;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 5;
@@ -3960,10 +4041,7 @@ void attack(int a){
             }
             
         }
-        else
-        {
-            message_show[1] = 1;
-        }
+    
     }
     else if (player.now_weapon == 2)
     {
@@ -4001,6 +4079,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x - k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 15;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 15;
@@ -4050,6 +4129,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x + k && enemy[i].position.y == player.position.y)
                             {
                                 enemy[i].health -= 15;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 15;
@@ -4097,6 +4177,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y + k)
                             {
                                 enemy[i].health -= 15;
+                                message_show[2] = 1;
                                 enemy[i].movement_left = 0;
                                 if (enemy[i].health < 1)
                                 {
@@ -4142,6 +4223,7 @@ void attack(int a){
                             if (enemy[i].exist == 1 && enemy[i].position.x == player.position.x && enemy[i].position.y == player.position.y - k)
                             {
                                 enemy[i].health -= 15;
+                                message_show[2] = 1;
                                 if (damage_spell_left)
                                 {
                                     enemy[i].health -= 15;
@@ -4185,10 +4267,7 @@ void attack(int a){
             }
             
         }
-        else
-        {
-            message_show[1] = 1;
-        }
+
     }
     
     
@@ -4377,13 +4456,14 @@ void check_end(){
     clear();
     board();
     attron(COLOR_PAIR(12) | A_BOLD);
-    mvprintw(LINES/2 - 5 , COLS/2 - 22 , "You lost the game! :(");
+    mvprintw(LINES/2 - 6 , COLS/2 - 18 , "You lost the game! :(");
     attroff(COLOR_PAIR(12) | A_BOLD);
     attron(COLOR_PAIR(16));
-    mvprintw(LINES/2 - 4 , COLS/2 - 22 , "You got %d golds!" , player.gold);
+    mvprintw(LINES/2 - 4 , COLS/2 - 18 , "You got %d golds!" , player.gold);
     attroff(COLOR_PAIR(16));
     attron(COLOR_PAIR(11));
-    mvprintw(LINES/2 - 2 , COLS/2 - 22 , "You can try again...");
+    mvprintw(LINES/2 - 2 , COLS/2 - 18 , "You can try again...");
+    mvprintw(LINES/2 - 2 , COLS/2 - 18 , "press ENTER to continue...");
     attroff(COLOR_PAIR(11));
 
     if (u.guest != 1)
@@ -4399,16 +4479,24 @@ void check_end(){
     fclose(file);
     }
 
-    char temp[100];
-    strcpy(temp , u.name);
-    strcat(temp , ".txt");
-    FILE *file = fopen( temp , "w");
-    u.total_golds += player.gold;
-    u.total_games++;
-    fprintf(file , "%s\n%s\n%s\n%d\n%d\n%d\n%s" , u.name , u.email , u.pass , u.total_golds , u.total_points , u.total_games , u.date_joined);
-    fclose(file);
-    
-    getch();
+    if (u.guest != 1)
+    {
+        char temp[100];
+        strcpy(temp , u.name);
+        strcat(temp , ".txt");
+        FILE *file = fopen( temp , "w");
+        u.total_golds += player.gold;
+        u.total_games++;
+        fprintf(file , "%s\n%s\n%s\n%d\n%d\n%d\n%s" , u.name , u.email , u.pass , u.total_golds , u.total_points , u.total_games , u.date_joined);
+        fclose(file);
+    }
+
+    int ch = getch();
+    while (ch != 10)
+    {
+        ch = getch();
+    }
+        
     menu_2();
     
 }
@@ -4496,26 +4584,27 @@ void tresure_floor(){
     reset_enemy();
     noecho();
     curs_set(FALSE);
+    last_room = 1;
 
-    room[55].E = 1;
-    room[55].up_left.x = randomint(LINES/8  , LINES/8 * 3);
-    room[55].bottom_right.x= randomint(LINES/8 * 5 , LINES/8 * 7);
-    room[55].up_left.y = randomint(COLS/2 - 22 , COLS/2 - 17);
-    room[55].bottom_right.y = randomint(COLS/2 + 20 , COLS/2 + 26);
+    room[0].E = 1;
+    room[0].up_left.x = randomint(LINES/2 -8  , LINES/2 - 5);
+    room[0].bottom_right.x= randomint(LINES/2 +4 , LINES/2 + 6);
+    room[0].up_left.y = randomint(COLS/2 - 19 , COLS/2 - 14);
+    room[0].bottom_right.y = randomint(COLS/2 + 17 , COLS/2 + 22);
 
-    for (int i = room[55].up_left.x; i <= room[55].bottom_right.x ; i++)
+    for (int i = room[0].up_left.x; i <= room[0].bottom_right.x ; i++)
     {
-        w[i][room[55].up_left.y].what = 1002; 
-        w[i][room[55].bottom_right.y].what = 1002; 
+        w[i][room[0].up_left.y].what = 1002; 
+        w[i][room[0].bottom_right.y].what = 1002; 
     }
-    for (int i = room[55].up_left.y; i <= room[55].bottom_right.y ; i++)
+    for (int i = room[0].up_left.y; i <= room[0].bottom_right.y ; i++)
     {
-        w[room[55].up_left.x][i].what = 1003; 
-        w[room[55].bottom_right.x][i].what = 1003; 
+        w[room[0].up_left.x][i].what = 1003; 
+        w[room[0].bottom_right.x][i].what = 1003; 
     }
-    for (int i = room[55].up_left.x + 1; i < room[55].bottom_right.x ; i++)
+    for (int i = room[0].up_left.x + 1; i < room[0].bottom_right.x ; i++)
     {
-        for (int j = room[55].up_left.y + 1; j < room[55].bottom_right.y ; j++)
+        for (int j = room[0].up_left.y + 1; j < room[0].bottom_right.y ; j++)
         {
             w[i][j].what = 1001; 
             if (randomint(0 , 15) == 6)
@@ -4530,21 +4619,60 @@ void tresure_floor(){
         }    
     }
 
-    int xx = randomint(room[55].up_left.x + 1 , room[55].bottom_right.x);
-    int yy = randomint(room[55].up_left.y + 1 , room[55].bottom_right.y);
+    int xx = randomint(room[0].up_left.x + 1 , room[0].bottom_right.x);
+    int yy = randomint(room[0].up_left.y + 1 , room[0].bottom_right.y);
     while (w[xx][yy].what != 1001)
     {
-        xx = randomint(room[55].up_left.x + 1 , room[55].bottom_right.x);
-        yy = randomint(room[55].up_left.y + 1 , room[55].bottom_right.y);
+        xx = randomint(room[0].up_left.x + 1 , room[0].bottom_right.x);
+        yy = randomint(room[0].up_left.y + 1 , room[0].bottom_right.y);
     }
     player.position.x = xx;
     player.position.y = yy;
+    int k = randomint(5 , 8 );
+    for (int i = 0; i < k; i++)
+    {
+        put_enemy();
+        
+    }
+    
+
     
 
 
 }
 
-
+void print_messages(){
+    if (message_show[1] == 1)
+    {
+        message_show[1] = 0;
+        attron(COLOR_PAIR(12));
+        mvprintw(3 , 0 , "Enemy hit you! (-%d)" , hit_lost);
+        attroff(COLOR_PAIR(12));
+        hit_lost = 0;
+    }
+    if (message_show[2] == 1)
+    {
+        message_show[2] = 0;
+        attron(COLOR_PAIR(11));
+        mvprintw(4 , 0 , "You hit the enemy!");
+        attroff(COLOR_PAIR(11));
+    }
+    if (message_show[3] == 1)
+    {
+        message_show[3] = 0;
+        attron(COLOR_PAIR(11));
+        mvprintw(5 , 0 , "You killed the enemy!");
+        attroff(COLOR_PAIR(11));
+    }
+    if (message_show[2] == 1)
+    {
+        message_show[2] = 0;
+        attron(COLOR_PAIR(10));
+        mvprintw(3 , 0 , "You entered new floor!");
+        attroff(COLOR_PAIR(10));
+    }
+    
+}
 
 
 
