@@ -193,6 +193,7 @@ int vision_m;
     void add_window(); // add window to rooms
     void check_and_create();
     void profile_page();
+    int map_check();
 
     //functions for enemies
     void put_enemy();
@@ -215,7 +216,7 @@ int main(){
     cbreak();
     int required_lines = 35;
     int required_cols = 135;
-    diff_level = 1;
+    diff_level = 3;
     hero_color = 0;
     int rows , cols;
     getmaxyx(stdscr, rows, cols);
@@ -230,7 +231,7 @@ int main(){
     
     menu_1();
     menu_2();
-    // new_game(u);
+    // new_game();
 
     endwin();
     return 0;
@@ -1371,7 +1372,7 @@ void new_game(){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 3;
+    player.floor = 1;
     player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
@@ -1388,13 +1389,18 @@ void new_game(){
     player.food[0] = 0;
     player.food[1] = 0;
     player.food[2] = 0;
-    vision_m = 0;
+    vision_m = 1;
     player.last_shot = '0';
     player.now_weapon = 0;
     hit_lost = 0;
     last_room = 0;
     gold_collected = 0;
     build_map();
+    while(map_check() == 0){
+        w_reset();
+        room_reset();
+        build_map();
+    }
     put_player();
     put_enemy();
     put_stairs();
@@ -1701,6 +1707,7 @@ void build_map(){
     }
     put_spellandweapon();
     add_window();
+    
 
 }
 
@@ -1768,7 +1775,7 @@ void new_floor(){
     reset_enemy();
     noecho();
     curs_set(FALSE);
-    while(w[player.position.x][player.position.y].what != 1){
+    while(w[player.position.x][player.position.y].what != 1 || map_check() == 0){
         w_reset();
         room_reset();
         build_map();
@@ -1795,6 +1802,9 @@ void handle_movement(){
         if(ch == 27){closeall(0);}
         switch (ch)
         {
+            // case 10:
+            // new_floor();
+            // break;
         case 'w':
             if(obstacle_check(player.position.x - 1 , player.position.y)){
                 break;
@@ -2195,10 +2205,11 @@ void print_info(){
     mvprintw(13 , 0 , "Hits:   %d" , player.hit);
     mvprintw(14 , 0 , "Floor:  %d" , player.floor);
     mvprintw(15 , 0 , "fullness:");
+    attron(COLOR_PAIR(11));
     mvprintw(15 , 9 , "[");
     for (int i = 0; i < player.Mfullness; i++)
     {
-        if (i < (player.fullness/250 +1))
+        if (i < ((player.fullness)/250 +1) && player.fullness > 0 )
         {
             mvprintw(15 ,  i + 10 , "#");
         }else
@@ -2207,6 +2218,7 @@ void print_info(){
         }
     }
     mvprintw(15 ,  player.Mfullness + 10 , "]\n%d" , player.fullness );
+    attroff(COLOR_PAIR(11));
     if (health_spell_left)
     {   
         attron(COLOR_PAIR(10));
@@ -2769,7 +2781,7 @@ void w_draw(){
 }
 
 void put_spellandweapon(){
-    int wp = randomint(0 , 8 - diff_level*2);
+    int wp = randomint(1 , 7 - diff_level);
     while(wp>0){
         int wwp = randomint(1 , 5);    
         if (wwp == 4 && player.weapon[4] > 0)
@@ -2811,7 +2823,7 @@ void put_spellandweapon(){
         
     }
 
-    int sp = randomint(0 , 8 - diff_level*2);
+    int sp = randomint(1 , 7 - diff_level);
     while(sp){
         int ssp = randomint(0 , 3);
         int done = 0;
@@ -5085,7 +5097,38 @@ void add_window(){
     
 }
 
-
+int map_check(){
+    for (int i = 0; i < 35; i++)
+    {
+        for (int j = 0; j < 135; j++)
+        {
+            if (w[i][j].what == 5)
+            {
+                if (w[i+1][j].what == 2 )
+                {
+                    continue;
+                }
+                if (w[i][j-1].what ==3)
+                {
+                    continue;
+                }
+                if ( w[i][j+1].what ==3)
+                {
+                    continue;
+                }
+                if (w[i-1][j].what == 2)
+                {
+                    continue;
+                }
+                return 0;
+                
+            }
+            
+        }
+        
+    }
+    return 1;
+}
 
 
 
