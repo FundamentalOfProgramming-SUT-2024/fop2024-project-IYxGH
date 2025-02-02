@@ -188,6 +188,7 @@ int vision_m;
     void tresure_floor(); // just one room, full of enemies, full of traps, kill them all for victory
     void print_messages(); // to print messages
     void vision_check(); // check where the player can see
+    void add_window(); // add window to rooms
 
     //functions for enemies
     void put_enemy();
@@ -1532,7 +1533,7 @@ void add_pillar(room_info room){
 
 int obstacle_check(int x , int y){
     if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0
-    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004 || check_live(x , y , 0)){
+    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004 || w[x][y].what == 9|| check_live(x , y , 0)){
         return 1;
     }else{
         return 0;
@@ -1616,6 +1617,7 @@ void build_map(){
         }
     }
     put_spellandweapon();
+    add_window();
 
 }
 
@@ -2514,6 +2516,13 @@ void w_draw(){
                 mvprintw(i , j , "#");
                 attroff(A_REVERSE);
                 break;
+
+            case 9:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                attron(COLOR_PAIR(10));
+                mvprintw(i , j , "=");
+                attroff(COLOR_PAIR(10));
+                break;    
 
             case 7:
                 if (w[i][j].vision == 0 && vision_m == 0){break;}
@@ -4854,13 +4863,144 @@ void vision_check(){
         }
         
     }
+
+
+    if (w[player.position.x + 1][player.position.y].what == 9)
+    {
+        for (int k = 0; k < 35 - player.position.x; k++)
+        {
+            int wh = check_room_pos(player.position.x + 2 + k , player.position.y);
+            if (wh != -1)
+            {
+                rr = wh;
+                for (int i = room[rr].up_left.x; i <= room[rr].bottom_right.x ; i++)
+                {
+                    for (int j = room[rr].up_left.y; j <= room[rr].bottom_right.y; j++)
+                    {
+                        if (w[i][j].vision == 0)
+                        {
+                            w[i][j].vision = 1;
+                        }
+                        
+                    }
+                    
+                }
+                break;
+            }
+            
+        }
+        
+    }
+    if (w[player.position.x - 1][player.position.y].what == 9)
+    {
+        for (int k = 0; k < player.position.x -2; k++)
+        {
+            int wh = check_room_pos(player.position.x - 2 - k , player.position.y);
+            if (wh != -1)
+            {
+                rr = wh;
+                for (int i = room[rr].up_left.x; i <= room[rr].bottom_right.x ; i++)
+                {
+                    for (int j = room[rr].up_left.y; j <= room[rr].bottom_right.y; j++)
+                    {
+                        if (w[i][j].vision == 0)
+                        {
+                            w[i][j].vision = 1;
+                        }
+                        
+                    }
+                    
+                }
+                break;
+            }
+            
+        }
+        
+    }
+    if (w[player.position.x ][player.position.y + 1].what == 9)
+    {
+        for (int k = 0; k < 135 - player.position.y; k++)
+        {
+            int wh = check_room_pos(player.position.x , player.position.y  + 2 + k);
+            if (wh != -1)
+            {
+                rr = wh;
+                for (int i = room[rr].up_left.x; i <= room[rr].bottom_right.x ; i++)
+                {
+                    for (int j = room[rr].up_left.y; j <= room[rr].bottom_right.y; j++)
+                    {
+                        if (w[i][j].vision == 0)
+                        {
+                            w[i][j].vision = 1;
+                        }
+                        
+                    }
+                    
+                }
+                break;
+            }
+            
+        }
+        
+    }
+if (w[player.position.x ][player.position.y - 1].what == 9)
+    {
+        for (int k = 0; k <  player.position.y - 2; k++)
+        {
+            int wh = check_room_pos(player.position.x , player.position.y  - 2 - k);
+            if (wh != -1)
+            {
+                rr = wh;
+                for (int i = room[rr].up_left.x; i <= room[rr].bottom_right.x ; i++)
+                {
+                    for (int j = room[rr].up_left.y; j <= room[rr].bottom_right.y; j++)
+                    {
+                        if (w[i][j].vision == 0)
+                        {
+                            w[i][j].vision = 1;
+                        }
+                        
+                    }
+                    
+                }
+                break;
+            }
+            
+        }
+        
+    }
     
     
 
 }
 
-
-
+void add_window(){
+    int h = randomint (3 , 9);
+    while (h)
+    {
+        int done = 1;
+        while (done)
+        {
+            int x = randomint(1 , 34);
+            int y = randomint(22 , 135);
+            if (w[x][y].what == 2 )
+            {
+                w[x][y].what = 9;
+                h--;
+                done = 0;
+            }else if ( w[x][y+1].what == 3 && w[x][y-1].what == 3 && w[x][y].what == 3)
+            {
+                w[x][y].what = 9;
+                h--;
+                done = 0;
+            }
+            
+            
+        }
+        
+    }
+    
+}
 
 
 
