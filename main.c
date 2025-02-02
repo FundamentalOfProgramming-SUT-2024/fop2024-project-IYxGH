@@ -121,6 +121,7 @@ int speed_spell_left;
 int damage_spell_left;
 int last_room; // check if he reached the tresure room or not
 int hit_lost;
+int gold_collected;
 
 
 // functions    
@@ -1239,7 +1240,7 @@ void new_game(){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 5;
+    player.floor = 3;
     player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
@@ -1257,6 +1258,7 @@ void new_game(){
     player.now_weapon = 0;
     hit_lost = 0;
     last_room = 0;
+    gold_collected = 0;
     build_map();
     put_player();
     put_enemy();
@@ -1507,21 +1509,21 @@ void build_map(){
             a.x = 1 + 19*j;
             b.x = 15 + 19*j;
             if (i==0){
-                a.y = COLS - 114;
-                b.y = COLS - 91;
+                a.y = COLS - 112;
+                b.y = COLS - 90;
             }
             else if (i==1)
             {
-                a.y = COLS - 84;
-                b.y = COLS - 62;
+                a.y = COLS - 82;
+                b.y = COLS - 60;
             }
             else if(i==2){
-                a.y = COLS - 55;
-                b.y = COLS - 32;
+                a.y = COLS - 52;
+                b.y = COLS - 29;
             }
             else if(i==3){
-                a.y = COLS - 25;
-                b.y = COLS - 2;
+                a.y = COLS - 22;
+                b.y = COLS - 1;
             }
             room_generator(a , b);
             room[10*j + i] = s;
@@ -1758,6 +1760,7 @@ void handle_movement(){
         case 'x':
             if(w[player.position.x][player.position.y].what == 7){
                 player.floor++;
+                message_show[4] = 1;
                 new_floor();
             }
             else if(w[player.position.x][player.position.y].what == 1007){
@@ -1936,15 +1939,19 @@ void pick_item(int x , int y){
     {
         w[x][y].what = 1;
         int value = randomint(3 , 10);
-        value /= diff_level;
+        // value /= diff_level;
         if(value == 0){value++;}
         player.gold += value;
+        gold_collected = value;
+        message_show[6] = 1;
     }
     else if (w[x][y].what == 302)
     {
         w[x][y].what = 1;
         int value = 30 - 5*diff_level;
         player.gold += value;
+        gold_collected = value;
+        message_show[6] = 1;
     }
     else if (w[x][y].what == 101)
     {
@@ -2014,12 +2021,12 @@ void pick_item(int x , int y){
 }
      
 void print_info(){
-    mvprintw(1 , 3 , "---%s---" , u.name);
+    mvprintw(1 , 6 , "---%s---" , u.name);
     for (int i = 0; i < LINES; i++)
     {
-        mvaddch(i , 20 , '|');
+        mvaddch(i , 23 , '|');
     }
-    for(int i = 0 ; i < 20 ; i ++){
+    for(int i = 0 ; i < 23 ; i ++){
         mvprintw(2 ,  i , "■");  //⇔▬▲▼■
         mvprintw(9 ,  i , "■");
     }
@@ -2663,6 +2670,7 @@ void treasure_room(room_info room){
 void check_trap(){
     if (w[player.position.x][player.position.y].what == 8 || w[player.position.x][player.position.y].what == 1008)
     {
+        message_show[5] = 1;
         player.hit -= 5;
         player.hit -= 3* diff_level;
         if(w[player.position.x][player.position.y].vision <= 2){
@@ -3554,6 +3562,7 @@ void attack(int a){
                 if (enemy[i].health < 1)
                 {
                     enemy[i].exist = 0 ;
+                    message_show[3] = 1;
                 }
                 
             }
@@ -3578,6 +3587,7 @@ void attack(int a){
                     if (enemy[i].health < 1)
                     {
                         enemy[i].exist = 0 ;
+                    message_show[3] = 1;
                     }
                     
                 }
@@ -3636,6 +3646,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3685,6 +3696,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3732,6 +3744,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3781,6 +3794,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3861,6 +3875,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3910,6 +3925,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -3957,6 +3973,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4006,6 +4023,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4088,6 +4106,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4138,6 +4157,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4182,6 +4202,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4232,6 +4253,7 @@ void attack(int a){
                                 if (enemy[i].health < 1)
                                 {
                                     enemy[i].exist = 0;
+                                    message_show[3] = 1;
                                 }
                             }
                             
@@ -4664,12 +4686,27 @@ void print_messages(){
         mvprintw(5 , 0 , "You killed the enemy!");
         attroff(COLOR_PAIR(11));
     }
-    if (message_show[2] == 1)
+    if (message_show[4] == 1)
     {
-        message_show[2] = 0;
+        message_show[4] = 0;
         attron(COLOR_PAIR(10));
-        mvprintw(3 , 0 , "You entered new floor!");
+        mvprintw(6 , 0 , "You entered new floor!");
         attroff(COLOR_PAIR(10));
+    }
+    if (message_show[5] == 1)
+    {
+        message_show[5] = 0;
+        attron(COLOR_PAIR(12));
+        mvprintw(6 , 0 , "Trap! Get away!");
+        attroff(COLOR_PAIR(12));
+    }
+    if (message_show[6] == 1)
+    {
+        message_show[6] = 0;
+        attron(COLOR_PAIR(16));
+        mvprintw(6 , 0 , "You collected %d golds!" , gold_collected );
+        attroff(COLOR_PAIR(16));
+        gold_collected = 0;
     }
     
 }
