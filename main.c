@@ -192,6 +192,7 @@ int vision_m;
     void vision_check(); // check where the player can see
     void add_window(); // add window to rooms
     void check_and_create();
+    void profile_page();
 
     //functions for enemies
     void put_enemy();
@@ -593,7 +594,7 @@ int check_pass(char p[]){
             num = 1;
         }
     }
-    if(small == 1 && cap == 1 && num == 1){
+    if(small == 1 && cap == 1 && num == 1 && strlen(p) >= 7){
         return 1;
     }
     return 0;
@@ -680,6 +681,7 @@ void rankings_page(){
                         attroff(A_BOLD | A_BLINK | COLOR_PAIR(9) );
                     }
 
+            mvprintw(LINES - 3 , COLS/2 - 6 , "Press ENTER to exit...");
                     mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
                     for(int i = 0 ; i < 3 ; i++){
                         if(page == 1 + i){
@@ -745,6 +747,7 @@ void rankings_page(){
                         attroff(A_BOLD | A_BLINK | COLOR_PAIR(9) );
                     }
 
+            mvprintw(LINES - 3 , COLS/2 - 6 , "Press ENTER to exit...");
                     mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
                     for(int i = 0 ; i < 3 ; i++){
                         if(page == 1 + i){
@@ -788,6 +791,7 @@ void rankings_page(){
                 }
             }
             mvprintw(LINES - 4 , COLS/2 - 6 , "Page:");
+            mvprintw(LINES - 3 , COLS/2 - 6 , "Press ENTER to exit...");
             for(int i = 0 ; i < 3 ; i++){
                 if(page == 1 + i){
                     attron(A_REVERSE);
@@ -797,7 +801,7 @@ void rankings_page(){
                     attroff(A_REVERSE);
                 }
             }
-        }else if (ch == '0')
+        }else if (ch == 10)
         {
             break;
         }
@@ -937,7 +941,7 @@ void login_page(){
             strcpy(u.pass ,line );
         }
         
-        else if (current_line == 6)
+        else if (current_line == 7)
         {
             strcpy(u.date_joined, line);
         }
@@ -963,14 +967,14 @@ void login_page(){
             getnstr(email ,  50);
             if (strcmp(email , u.email) == 0)
             {
-                mvprintw(LINES/2 + 2 , COLS/2 -6 , "Your password is: %s" , u.pass);
+                mvprintw(LINES/2 + 3 , COLS/2 -6 , "Your password is: %s" , u.pass);
             }else
             {
                 mvprintw(LINES/2 + 2 , COLS/2 - 4 , "Incorrect email!" );
                 clear_line(LINES/ 2  - 3 , COLS/2 - 10 , 40);   
-                continue;             
             }
             
+                continue;             
             
         }
         
@@ -1035,11 +1039,11 @@ void menu_2(){
     noecho();
     board();
     int choice = 0;
-    const char *menu_items[] = {"New Game" , "Load game" , "Exit" , "Rankings" , "Settings"};
+    const char *menu_items[] = {"New Game" , "Load game" , "Settings" , "Rankings" , "Profile" ,  "Exit"};
 
 
     while(1){
-        for(int i = 0 ; i < 5 ; i++)
+        for(int i = 0 ; i < 6 ; i++)
         {
             if(i == choice){
                 attron(A_REVERSE);
@@ -1051,9 +1055,9 @@ void menu_2(){
         }
         int ch = getch();
         if (ch == KEY_UP )
-            choice = (choice == 0) ? 4 : choice - 1;
+            choice = (choice == 0) ? 5 : choice - 1;
         else if(ch == KEY_DOWN)
-            choice = (choice == 4) ? 0 : choice + 1;
+            choice = (choice == 5) ? 0 : choice + 1;
         else if( ch == 10)
             break;
     }
@@ -1067,7 +1071,7 @@ void menu_2(){
         load_last_game();
         break;
 
-    case 2:
+    case 5:
         closeall();
         break;
 
@@ -1075,8 +1079,13 @@ void menu_2(){
         rankings_page();
         break;
 
-    case 4:
+    case 2:
         setting_page();
+        break;
+
+    case 4:
+        profile_page();
+        menu_2();
         break;
     default:
     break;
@@ -1124,6 +1133,55 @@ void setting_page(){
         break;
     }
 }
+
+void profile_page(){
+    clear();
+    board();
+    if (u.guest == 1)
+    {
+        attron(COLOR_PAIR(12));
+        mvprintw(LINES/2 - 7 , COLS/2 - 15 , "You cant see your profile as a guest!");
+        mvprintw(LINES/2 - 5  , COLS/2 - 15 , "Press ENTER to back...");
+
+        attroff(COLOR_PAIR(12));
+        int ch = getch();
+        while (ch != 10)
+        {
+            ch = getch();
+        }
+        return;
+    }
+    
+    mvprintw(LINES / 2 - 5 , COLS/2 - 12 , "Name:");
+    mvprintw(LINES / 2 - 3 , COLS/2 - 12 , "Email:");
+    mvprintw(LINES / 2 - 1 , COLS/2 - 12 , "Total Golds:");
+    mvprintw(LINES / 2 + 1 , COLS/2 - 12 , "Total Points:");
+    mvprintw(LINES / 2 + 3 , COLS/2 - 12 , "Total Games:");
+    mvprintw(LINES / 2 + 5 , COLS/2 - 12 , "Date Joined:");
+
+    attron(COLOR_PAIR(11));
+    attron(A_BOLD);
+    mvprintw(LINES / 2 - 5 , COLS/2 + 2 , "%s" , u.name);
+    attroff(A_BOLD);
+    mvprintw(LINES / 2 - 3 , COLS/2 + 2 , "%s" , u.email);
+    mvprintw(LINES / 2 - 1 , COLS/2 + 2 , "%d" , u.total_golds);
+    mvprintw(LINES / 2 + 1 , COLS/2 + 2 , "%d" , u.total_points);
+    mvprintw(LINES / 2 + 3 , COLS/2 + 2 , "%d" , u.total_games);
+    mvprintw(LINES / 2 + 5 , COLS/2 + 2 , "%s" , u.date_joined);
+    attroff(COLOR_PAIR(11));
+
+    mvprintw(LINES/2 + 8 , COLS/2 - 12 , "Press ENTER to back...");
+
+    int ch = getch();
+    while (ch != 10)
+    {
+        ch = getch();
+    }
+    
+
+
+
+} 
 
 void diff_page(){
     noecho();
