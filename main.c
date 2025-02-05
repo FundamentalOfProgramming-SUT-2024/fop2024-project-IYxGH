@@ -195,6 +195,7 @@ int vision_m;
     void profile_page();
     int map_check();
     int distance(int x ,int  y , pos p);
+    void enchant_room();
 
     //functions for enemies
     void put_enemy();
@@ -1373,7 +1374,7 @@ void new_game(){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 4;
+    player.floor = 1;
     player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
@@ -1623,7 +1624,8 @@ void add_pillar(room_info room){
 
 int obstacle_check(int x , int y){
     if(w[x][y].what == 2 || w[x][y].what == 3 || w[x][y].what == 4 || w[x][y].what == 0
-    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004 || w[x][y].what == 9|| check_live(x , y , 0)){
+    || w[x][y].what == 1002 || w[x][y].what == 1003 || w[x][y].what == 1004 || w[x][y].what == 9|| check_live(x , y , 0)
+    || w[x][y].what == 2002 || w[x][y].what == 2003 || w[x][y].what == 2004){
         return 1;
     }else{
         return 0;
@@ -1708,7 +1710,9 @@ void build_map(){
     }
     put_spellandweapon();
     add_window();
-    
+    if(player.floor < 4){
+        enchant_room();
+    }
 
 }
 
@@ -1776,6 +1780,7 @@ void new_floor(){
     reset_enemy();
     noecho();
     curs_set(FALSE);
+    build_map();
     while(w[player.position.x][player.position.y].what != 1 || map_check() == 0){
         w_reset();
         room_reset();
@@ -1978,6 +1983,21 @@ void handle_movement(){
             int temp = player.hit;
             move_enemy();
             check_trap();
+            if (player.fullness <= 0)
+            {
+                player.hit--;
+            }
+            if (check_room_pos(player.position.x , player.position.y) != -1)
+            {
+                int k = check_room_pos(player.position.x , player.position.y);
+                if (w[room[k].up_left.x][room[k].up_left.y].what == 2003)
+                {
+                    player.hit -= 2;
+                }
+                
+            }
+            
+            
 
             //heal
             if (player.hit < temp)
@@ -2839,6 +2859,37 @@ void w_draw(){
                 }
                 break; 
 
+            case 2002:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                attron(COLOR_PAIR(15));
+                mvprintw(i,j , "|");
+                attroff(COLOR_PAIR(15));
+                break;
+
+            
+            case 2003:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                attron(COLOR_PAIR(15));
+                mvprintw(i , j , "-");
+                attroff(COLOR_PAIR(15));
+                break;
+            
+            case 2004:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                attron(COLOR_PAIR(19));
+                mvprintw(i , j , "O");
+                attroff(COLOR_PAIR(19));
+                break;    
+
+            
+            case 2009:
+                if (w[i][j].vision == 0 && vision_m == 0){break;}
+                attron(COLOR_PAIR(15));
+                mvprintw(i , j , "=");
+                attroff(COLOR_PAIR(15));
+                break;      
+
             default:
                 break;
             }
@@ -2850,7 +2901,13 @@ void w_draw(){
 
 void put_spellandweapon(){
     int wp = randomint(1 , 7 - diff_level);
+    int noloop = 0;
     while(wp>0){
+        noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
         int wwp = randomint(1 , 5);    
         if (wwp == 4 && player.weapon[4] > 0)
         {
@@ -2859,6 +2916,12 @@ void put_spellandweapon(){
           
         int done = 0;
         while(done == 0){
+            noloop++;
+            if (noloop> 99999999)
+            {
+                break;
+            }
+            
             int xx = randomint(2 , 34);
             int yy = randomint(20, 132);
             if(w[xx][yy].what == 1){
@@ -2890,12 +2953,23 @@ void put_spellandweapon(){
         }
         
     }
+    noloop = 0;
 
     int sp = randomint(1 , 7 - diff_level);
     while(sp){
+         noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
         int ssp = randomint(0 , 3);
         int done = 0;
         while(done == 0){
+             noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
             int xx = randomint(2 , 34);
             int yy = randomint(2, 130);
             if(w[xx][yy].what == 1){
@@ -3612,87 +3686,28 @@ void move_enemy(){
                 player.hit -= 7;
                 hit_lost += 7;
                 message_show[1] = 1;
-                continue;
             }
             }
             
             //move
             if (enemy[i].movement_left > 0)
             {
-            if (player.position.x < enemy[i].position.x && player.position.y < enemy[i].position.y)
-            {
-                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
+                pos temp = enemy[i].position;
+                for (int j = 0; j < 3; j++)
                 {
-                    enemy[i].position.x--;
+                    for (int k = 0; k < 3; k++)
+                    {
+                        int a = distance(enemy[i].position.x + j - 1  , enemy[i].position.y + k - 1  ,player.position);
+                        int b = distance(temp.x  , temp.y  ,player.position);
+                        if(b >= a &&  obstacle_check(enemy[i].position.x + j - 1  , enemy[i].position.y + k - 1) == 0 ){
+                            temp.x = enemy[i].position.x + j - 1;
+                            temp.y = enemy[i].position.y + k - 1;
+                        }
+                    }
+                    
                 }
-                else if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
-                {
-                    enemy[i].position.y--;
-                }
+                enemy[i].position = temp;
                 
-            }
-            else if (player.position.x < enemy[i].position.x && player.position.y > enemy[i].position.y)
-            {
-                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
-                {
-                    enemy[i].position.x--;
-                }
-                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
-                {
-                    enemy[i].position.y++;
-                }
-            }
-            else if (player.position.x > enemy[i].position.x && player.position.y > enemy[i].position.y)
-            {
-                
-                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
-                {
-                    enemy[i].position.x++;
-                }
-                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
-                {
-                    enemy[i].position.y++;
-                }
-            }
-            else if (player.position.x > enemy[i].position.x && player.position.y < enemy[i].position.y)
-            {
-                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
-                {
-                    enemy[i].position.x++;
-                }
-                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
-                {
-                    enemy[i].position.y--;
-                }
-            }
-            else if (player.position.x > enemy[i].position.x)
-            {
-                if (obstacle_check(enemy[i].position.x +1 , enemy[i].position.y) == 0)
-                {
-                    enemy[i].position.x++;
-                }
-            }
-            else if (player.position.x < enemy[i].position.x)
-            {
-                if (obstacle_check(enemy[i].position.x -1 , enemy[i].position.y) == 0)
-                {
-                    enemy[i].position.x--;
-                }
-            }
-            else if (player.position.y > enemy[i].position.y)
-            {
-                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y + 1) == 0)
-                {
-                    enemy[i].position.y++;
-                }
-            }
-            else if (player.position.y < enemy[i].position.y)
-            {
-                if (obstacle_check(enemy[i].position.x  , enemy[i].position.y - 1) == 0)
-                {
-                    enemy[i].position.y--;
-                }
-            }
             }
         }
         else if (enemy[i].type == 'U')
@@ -5139,11 +5154,22 @@ if (w[player.position.x ][player.position.y - 1].what == 9)
 
 void add_window(){
     int h = randomint (2 , 7);
+    int noloop = 0;
     while (h)
     {
+         noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
         int done = 1;
         while (done)
         {
+             noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
             int x = randomint(8 , 26);
             int y = randomint(COLS - 100 , COLS - 20);
             if (w[x][y].what == 2 )
@@ -5172,19 +5198,19 @@ int map_check(){
         {
             if (w[i][j].what == 5)
             {
-                if (w[i+1][j].what == 2 )
+                if (w[i+1][j].what == 2 || w[i+1][j].what == 1002 || w[i+1][j].what == 2002  )
                 {
                     continue;
                 }
-                if (w[i][j-1].what ==3)
+                if (w[i][j - 1].what == 3 || w[i][j - 1].what == 1003 || w[i][j - 1].what == 2003)
                 {
                     continue;
                 }
-                if ( w[i][j+1].what ==3)
+                if ( w[i][j+1].what == 3 || w[i][j+1].what == 1003 || w[i][j+1].what == 2003 )
                 {
                     continue;
                 }
-                if (w[i-1][j].what == 2)
+                if (w[i-1][j].what == 2 || w[i-1][j].what == 1002 || w[i-1][j].what == 2002)
                 {
                     continue;
                 }
@@ -5200,7 +5226,7 @@ int map_check(){
 
 int distance(int x , int y , pos p){
     int aa = p.x - x;
-    if(aa<0){aa = -aa};
+    if(aa<0){aa = -aa;};
     int bb = p.y - y;
     if (bb < 0)
     {
@@ -5211,6 +5237,47 @@ int distance(int x , int y , pos p){
     
 }
 
+void enchant_room(){
+    int done = 1;
+    int noloop = 0;
+    while (done)
+    {
+         noloop++;
+            if (noloop> 999999999)
+            {
+                break;
+            }
+        int i =  randomint(0 , 2);
+        int j = randomint(0 , 4);
+        if (room[10*i + j].E ==1){
+            for (int k = room[10*i + j].up_left.x ; k <= room[10*i + j].bottom_right.x ; k++)
+            {
+                for (int q = room[10*i + j].up_left.y ; q <= room[10*i + j].bottom_right.y ; q++)
+                {
+                
+                    if ((w[k][q].what >=2 && w[k][q].what <= 4)) 
+                    {
+                        w[k][q].what += 2000;
+                    }
+                    else
+                    {
+                        if (randomint(0 , 8 + diff_level*2) == 0 && w[k][q].what != 5 )
+                        {
+                            w[k][q].what = 200 + randomint(1 , 4);
+                        }
+                        
+                    }
+                
+                    
+                }
+                
+            }
+            done = 0;
+        }
+        
+    }
+    
+}
 
 
 
