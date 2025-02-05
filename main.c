@@ -194,6 +194,7 @@ int vision_m;
     void check_and_create();
     void profile_page();
     int map_check();
+    int distance(int x ,int  y , pos p);
 
     //functions for enemies
     void put_enemy();
@@ -216,7 +217,7 @@ int main(){
     cbreak();
     int required_lines = 35;
     int required_cols = 135;
-    diff_level = 3;
+    diff_level = 1;
     hero_color = 0;
     int rows , cols;
     getmaxyx(stdscr, rows, cols);
@@ -229,9 +230,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    menu_1();
-    menu_2();
-    // new_game();
+    // menu_1();
+    // menu_2();
+    new_game();
 
     endwin();
     return 0;
@@ -1372,7 +1373,7 @@ void new_game(){
     noecho();
     curs_set(FALSE);
 
-    player.floor = 1;
+    player.floor = 4;
     player.gold = 0;
     player.Mfullness = 8 - diff_level; 
     player.fullness = (8 - diff_level)*250; 
@@ -1389,7 +1390,7 @@ void new_game(){
     player.food[0] = 0;
     player.food[1] = 0;
     player.food[2] = 0;
-    vision_m = 1;
+    vision_m = 0;
     player.last_shot = '0';
     player.now_weapon = 0;
     hit_lost = 0;
@@ -2201,9 +2202,18 @@ void print_info(){
         default:
             break;
     }
-    mvprintw(12 , 0 , "Gold:   %d" , player.gold);
-    mvprintw(13 , 0 , "Hits:   %d" , player.hit);
-    mvprintw(14 , 0 , "Floor:  %d" , player.floor);
+    mvprintw(12 , 0 , "Gold:");
+    attron(COLOR_PAIR(16));
+    mvprintw(12 , 8 , "%d" , player.gold);
+    attroff(COLOR_PAIR(16));
+    mvprintw(13 , 0 , "Hits:");
+    attron(COLOR_PAIR(21));
+    mvprintw(13 , 8 , "%d" , player.hit);
+    attroff(COLOR_PAIR(21));
+    mvprintw(14 , 0 , "Floor:");
+    attron(COLOR_PAIR(11));
+    mvprintw(14 , 8 , "%d" , player.floor);
+    attroff(COLOR_PAIR(11));
     mvprintw(15 , 0 , "fullness:");
     attron(COLOR_PAIR(11));
     mvprintw(15 , 9 , "[");
@@ -2219,6 +2229,44 @@ void print_info(){
     }
     mvprintw(15 ,  player.Mfullness + 10 , "]\n%d" , player.fullness );
     attroff(COLOR_PAIR(11));
+    mvprintw(17 , 0 , "Weapon type:");
+    mvprintw(18 , 0 , "Weapon left:");
+    switch (player.now_weapon)
+    {
+    case 0:
+        mvprintw(17 , 13 , "⚒");
+        mvprintw(18 , 13 , "%d" , player.weapon[0]);
+        break;
+
+    case 1:
+        mvprintw(17 , 13 , "🗡");
+        mvprintw(18 , 13 , "%d" , player.weapon[1]);
+        break;
+
+    case 2:
+        mvprintw(17 , 13 , "⁋");
+        mvprintw(18 , 13 , "%d" , player.weapon[2]);
+        break;
+        
+    case 3:
+        mvprintw(17 , 13, "➳");
+        mvprintw(18 , 13, "%d" , player.weapon[3]);
+        break;
+    
+    case 4:
+        mvprintw(17 , 13 , "⚔");
+        mvprintw(18 , 13 , "%d" , player.weapon[4]);
+        break;
+    
+    case -1:
+        mvprintw(17 , 13 , "-");
+        mvprintw(18 , 13 , "-");
+        break;
+    
+
+    default:
+        break;
+    }
     if (health_spell_left)
     {   
         attron(COLOR_PAIR(10));
@@ -2372,7 +2420,9 @@ void weapon_list(){
                 player.now_weapon = 0;
                 clear();
                 board();
+                attron(COLOR_PAIR(10));
                 mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                attroff(COLOR_PAIR(10));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2380,7 +2430,9 @@ void weapon_list(){
             {
                 clear();
                 board();
+                attron(COLOR_PAIR(12));
                 mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                attroff(COLOR_PAIR(12));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2392,7 +2444,9 @@ void weapon_list(){
                 player.now_weapon = 4;
                 clear();
                 board();
+                attron(COLOR_PAIR(10));
                 mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                attroff(COLOR_PAIR(10));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2400,7 +2454,9 @@ void weapon_list(){
             {
                 clear();
                 board();
+                attron(COLOR_PAIR(12));
                 mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                attroff(COLOR_PAIR(12));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2411,7 +2467,9 @@ void weapon_list(){
                 player.now_weapon = 1;
                 clear();
                 board();
+                attron(COLOR_PAIR(10));
                 mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                attroff(COLOR_PAIR(10));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2419,7 +2477,9 @@ void weapon_list(){
             {
                 clear();
                 board();
+                attron(COLOR_PAIR(12));
                 mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                attroff(COLOR_PAIR(12));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2431,7 +2491,9 @@ void weapon_list(){
                 player.now_weapon = 2;
                 clear();
                 board();
+                attron(COLOR_PAIR(10));
                 mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                attroff(COLOR_PAIR(10));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2439,7 +2501,9 @@ void weapon_list(){
             {
                 clear();
                 board();
+                attron(COLOR_PAIR(12));
                 mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                attroff(COLOR_PAIR(12));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2451,7 +2515,9 @@ void weapon_list(){
                 player.now_weapon = 3;
                 clear();
                 board();
+                attron(COLOR_PAIR(10));
                 mvprintw(12 , COLS/2 - 16 , "Weapon changed succesfully!");
+                attroff(COLOR_PAIR(10));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -2459,7 +2525,9 @@ void weapon_list(){
             {
                 clear();
                 board();
+                attron(COLOR_PAIR(12));
                 mvprintw(12 , COLS/2 - 16 , "You should first put your weapon in the bag!");
+                attroff(COLOR_PAIR(12));
                 mvprintw(14 , COLS/2 - 16 , "press any key to continue...");
                 getch();
             }
@@ -5130,6 +5198,18 @@ int map_check(){
     return 1;
 }
 
+int distance(int x , int y , pos p){
+    int aa = p.x - x;
+    if(aa<0){aa = -aa};
+    int bb = p.y - y;
+    if (bb < 0)
+    {
+        bb = -bb;
+    }
+
+    return aa + bb;
+    
+}
 
 
 
