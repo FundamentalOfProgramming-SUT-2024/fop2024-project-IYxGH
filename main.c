@@ -231,9 +231,9 @@ int main(){
     keypad(stdscr , TRUE);
 
     
-    // menu_1();
-    // menu_2();
-    new_game();
+    menu_1();
+    menu_2();
+    // new_game();
 
     endwin();
     return 0;
@@ -392,10 +392,10 @@ void load_last_game(){
     }
     fscanf(file , "%d %d %d %d %d %d " , &num_D , &num_F , &num_G , &num_of_enemies , &num_S , &num_U );
 
-
+    int a;
     fscanf(file ,"%d %d %d %d %d " , &last_damage , &diff_level , &music , &hero_color , &vision_m);
-    fscanf(file , "%d %d %d %d %d " , &health_spell_left , &damage_spell_left , &speed_spell_left , &last_room , &hit_lost);
-
+    fscanf(file , "%d %d %d %d %d " , &health_spell_left , &damage_spell_left , &a , &last_room , &hit_lost);
+    speed_spell_left = a;
 
     fclose(file);
     handle_movement();
@@ -1154,6 +1154,45 @@ void profile_page(){
         }
         return;
     }
+
+        char temp[100];
+    strcpy(temp , u.name);
+    strcat(temp , ".txt");
+    FILE *file = fopen( temp , "r");
+    char line[100];
+    int current_line = 1;
+    while (fgets(line, sizeof(line), file) != NULL) {
+        line[strcspn(line, "\n")] = '\0';
+        if (current_line == 2)
+        {
+            strcpy(u.email , line);
+        }
+        else if (current_line == 3)
+        {
+            strcpy(u.pass ,line );
+        }
+        else if (current_line == 4)
+        {
+            sscanf(line , "%d" , &u.total_golds );
+        }
+        else if (current_line == 5)
+        {
+            sscanf(line , "%d" , &u.total_points );
+        }
+        else if (current_line == 6)
+        {
+            sscanf(line , "%d" , &u.total_games );
+        }
+        
+        else if (current_line == 7)
+        {
+            strcpy(u.date_joined, line);
+        }
+        
+        
+        current_line++;
+    }
+
     
     mvprintw(LINES / 2 - 5 , COLS/2 - 12 , "Name:");
     mvprintw(LINES / 2 - 3 , COLS/2 - 12 , "Email:");
@@ -1394,6 +1433,9 @@ void new_game(){
     vision_m = 0;
     player.last_shot = '0';
     player.now_weapon = 0;
+    speed_spell_left = 0;
+    damage_spell_left = 0;
+    health_spell_left = 0;
     hit_lost = 0;
     last_room = 0;
     gold_collected = 0;
@@ -2396,7 +2438,7 @@ void weapon_list(){
     attron(A_BOLD);
     mvprintw(4 , COLS/2 - 18 , "Close range weapons:\t\t\tDamage\tRange");
     mvprintw(6 , COLS/2 - 16 , "Mace:        %d  ⚒  (Press \'m\' to pick)\t  5\tclose" , player.weapon[0]);
-    mvprintw(8 , COLS/2 - 16, "Sword:       %d  ⚔  (Press \'s\' to pick)\t  5\tclose" , player.weapon[4]);
+    mvprintw(8 , COLS/2 - 16, "Sword:       %d  ⚔  (Press \'s\' to pick)\t  12\tclose" , player.weapon[4]);
     mvprintw(11 , COLS/2 - 18, "Far range weapons:");
     mvprintw(13 , COLS/2 - 16 , "Dagger:      %d  🗡  (Press \'d\' to pick)\t  12\t  5" , player.weapon[1]);
     mvprintw(15 , COLS/2 - 16 , "Magic Wand:  %d  ⁋  (Press \'w\' to pick)\t  15\t  10" , player.weapon[2]);
@@ -3062,7 +3104,7 @@ void reset_enemy(){
         enemy[i].movement_left = 0;
         enemy[i].position.x = 0;
         enemy[i].position.y = 0;
-        enemy[i].type = ' ';
+        enemy[i].type = 'x';
         
     }
     
@@ -4612,9 +4654,9 @@ void add_food(room_info room){
 void food_list(){
     clear();
     board();
-    mvprintw(8 , COLS/2 -20 ,  "Normal food:    %d ● (press \'e\' to eat)" , player.food[0]);
-    mvprintw(10 , COLS/2 -20 , "Special food:   %d ◓ (press \'s\' to eat)" , player.food[1]);
-    mvprintw(12 , COLS/2 -20 , "Magic food:     %d ◒ (press \'m\' to eat)" , player.food[2]);
+    mvprintw(8 , COLS/2 -20 ,  "Normal food:    %d ●  (press \'e\' to eat)" , player.food[0]);
+    mvprintw(10 , COLS/2 -20 , "Special food:   %d ◓  (press \'s\' to eat)" , player.food[1]);
+    mvprintw(12 , COLS/2 -20 , "Magic food:     %d ◒  (press \'m\' to eat)" , player.food[2]);
     mvprintw(14 , COLS/2 -20 , "press \'E\' to continue...");
 
     int ch = getch();
@@ -4628,7 +4670,9 @@ void food_list(){
             player.fullness += 250;
             clear();
             board();
+            attron(COLOR_PAIR(21));
             mvprintw(10 , COLS/2 -20 , "You ate food succusfully!");
+            attroff(COLOR_PAIR(21));
             mvprintw(12 , COLS/2 -20 , "press any key to continue...");
             getch();
         }else
@@ -4641,6 +4685,7 @@ void food_list(){
             mvprintw(12 , COLS/2 -20 , "press any key to continue...");
             getch();
         }
+        food_list();
         break;
 
     case 's':
@@ -4666,6 +4711,7 @@ void food_list(){
         }
         
         
+        food_list();
         break;
 
     case 'm':
@@ -4691,6 +4737,7 @@ void food_list(){
         }
         
         
+        food_list();
         break;
 
     case 'E':
@@ -5255,13 +5302,13 @@ void enchant_room(){
                 for (int q = room[10*i + j].up_left.y ; q <= room[10*i + j].bottom_right.y ; q++)
                 {
                 
-                    if ((w[k][q].what >=2 && w[k][q].what <= 4)) 
+                    if ((w[k][q].what >=2 && w[k][q].what <= 4) || w[k][q].what == 9 ) 
                     {
                         w[k][q].what += 2000;
                     }
                     else
                     {
-                        if (randomint(0 , 8 + diff_level*2) == 0 && w[k][q].what != 5 )
+                        if (randomint(0 , 10 + diff_level*2) == 0 && w[k][q].what != 5 )
                         {
                             w[k][q].what = 200 + randomint(1 , 4);
                         }
